@@ -1,7 +1,53 @@
-<!DOCTYPE html>
 <html>
-<body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<style> circle {fill: lightblue; stroke: black;} </style>
+<body onload='init()'>
+<svg width=300 height=300>
+</svg>
+<script>
+async function init() {
+    data =  await d3.csv( "https://flunky.github.io/cars2017.csv")
+
+    ys = d3.scaleLog()
+    .domain([10, 150])
+    .range([150,0])
+
+    xs = d3.scaleLog()
+    .domain([10, 150])
+    .range([0,150])
+
+
+    // Circles
+    d3.select('svg')
+    .append("g")
+    .attr("transform", "translate(50,50)")
+    .selectAll("circle")
+    .data(data)
+    .enter().append("circle")
+    .attr("cx", function(d,i) {return xs(d.AverageCityMPG);})
+    .attr("cy", function(d,i) {return ys(d.AverageHighwayMPG);})
+    .attr("r", function(d,i) {return 2 + 1.0*d.EngineCylinders;})
+
+
+    // X-axis
+    d3.select('svg')
+    .append("g")
+    .attr("transform", "translate(50,200)")
+    .call(d3.axisBottom(xs)
+        .tickValues([10,20,50,100])
+        .tickFormat(d3.format("~s"))
+    );
+
+    // Y-axis
+    d3.select('svg')
+    .append("g")
+    .attr("transform", "translate(50,50)")
+        .call(d3.axisLeft(ys)
+        .tickValues([10,20,50,100])
+        .tickFormat(d3.format("~s"))
+    );
+
+}
+</script>
 </body>
 </html>
