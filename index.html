@@ -6,12 +6,13 @@
 <script>
 
 async function init() {
-    data =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv")
+    college_costs =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv")
+    minimum_wage =  await d3.csv( "https://sheidkamp.github.io/data/college/minimum_wage.csv")
 
-    console.log(data)
 
+    parseDate = d3.timeParse("%Y");
     var margin = {top: 10, right: 30, bottom: 30, left: 60},
-    width = 460 - margin.left - margin.right,
+    width = 760 - margin.left - margin.right,
     height = 400 - margin.top - margin.bottom;
 
     var svg = d3.select("#chart")
@@ -22,29 +23,61 @@ async function init() {
             .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
 
-    // Add X axis --> it is a date format
+    // Add X axis --> it is a year
     var x = d3.scaleTime()
-      .domain(d3.extent(data, function(d) { return d.Year; }))
+      .domain(d3.extent(college_costs, function(d) { return parseDate(d.Year); }))
       .range([ 0, width ]);
     svg.append("g")
       .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+      .call(d3.axisBottom(x)
+        .ticks(d3.timeYear.every(5))
+      );
 
     // Add Y axis
     var y = d3.scaleLinear()
-      .domain([0, d3.max(data, function(d) { return +d.AllCostsAdjusted; })])
+      .domain([0, d3.max(college_costs, function(d) { return +d["Public-TuitionAndFees"]; })])
       .range([ height, 0 ]);
     svg.append("g")
       .call(d3.axisLeft(y));
 
     svg.append("path")
-      .datum(data)
+      .datum(college_costs)
       .attr("fill", "none")
       .attr("stroke", "steelblue")
       .attr("stroke-width", 1.5)
       .attr("d", d3.line()
-        .x(function(d) { console.log("x-d", d.Year); return x(d.Year) })
-        .y(function(d) {console.log("y-d", d.AllCostsAdjusted);  return y(d.AllCostsAdjusted) })
+        .x(function(d) { return x(parseDate(d.Year)) })
+        .y(function(d) { return y(d["Public-TuitionAndFees"]) })
+        )
+
+    // *******************************************
+    // PART 2
+    // *******************************************
+    // Add X axis --> it is a year
+    //     var x = d3.scaleTime()
+    //   .domain(d3.extent(minimum_wage, function(d) { return parseDate(d.Year); }))
+    //   .range([ 0, width ]);
+    // svg.append("g")
+    //   .attr("transform", "translate(0," + height + ")")
+    //   .call(d3.axisBottom(x)
+    //     .ticks(d3.timeYear.every(5))
+    //   );
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(minimum_wage, function(d) { return +d.MinimumWage; })])
+      .range([ height, 0 ]);
+    svg.append("g")
+      .call(d3.axisRight(y));
+
+    svg.append("path")
+      .datum(minimum_wage)
+      .attr("fill", "none")
+      .attr("stroke", "yellow")
+      .attr("stroke-width", 1.5)
+      .attr("d", d3.line()
+        .x(function(d) { return x(parseDate(d.Year)) })
+        .y(function(d) { return y(d.MinimumWage) })
         )
 
 
