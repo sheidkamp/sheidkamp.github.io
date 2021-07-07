@@ -2,50 +2,52 @@
 <script src='https://d3js.org/d3.v5.min.js'></script>
 <style> circle {fill: lightblue; stroke: black;} </style>
 <body onload='init()'>
-<svg width=300 height=300>
-</svg>
+<div id="chart"></div>
 <script>
+
 async function init() {
-    data =  await d3.csv( "https://flunky.github.io/cars2017.csv")
+    data =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv")
 
-    ys = d3.scaleLog()
-    .domain([10, 150])
-    .range([150,0])
+    console.log(data)
 
-    xs = d3.scaleLog()
-    .domain([10, 150])
-    .range([0,150])
+    var margin = {top: 10, right: 30, bottom: 30, left: 60},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+    var svg = d3.select("#chart")
+        .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+    // Add X axis --> it is a date format
+    var x = d3.scaleTime()
+      .domain(d3.extent(data, function(d) { return d.Year; }))
+      .range([ 0, width ]);
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return +d.AllCostsAdjusted; })])
+      .range([ height, 0 ]);
+    svg.append("g")
+      .call(d3.axisLeft(y));
+
+    svg.append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5)
+      .attr("d", d3.line()
+        .x(function(d) { console.log("x-d", d.Year); return x(d.Year) })
+        .y(function(d) {console.log("y-d", d.AllCostsAdjusted);  return y(d.AllCostsAdjusted) })
+        )
 
 
-    // Circles
-    d3.select('svg')
-    .append("g")
-    .attr("transform", "translate(50,50)")
-    .selectAll("circle")
-    .data(data)
-    .enter().append("circle")
-    .attr("cx", function(d,i) {return xs(d.AverageCityMPG);})
-    .attr("cy", function(d,i) {return ys(d.AverageHighwayMPG);})
-    .attr("r", function(d,i) {return 2 + 1.0*d.EngineCylinders;})
-
-
-    // X-axis
-    d3.select('svg')
-    .append("g")
-    .attr("transform", "translate(50,200)")
-    .call(d3.axisBottom(xs)
-        .tickValues([10,20,50,100])
-        .tickFormat(d3.format("~s"))
-    );
-
-    // Y-axis
-    d3.select('svg')
-    .append("g")
-    .attr("transform", "translate(50,50)")
-        .call(d3.axisLeft(ys)
-        .tickValues([10,20,50,100])
-        .tickFormat(d3.format("~s"))
-    );
 
 }
 </script>
