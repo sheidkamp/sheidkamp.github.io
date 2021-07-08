@@ -8,17 +8,25 @@
 </div>
 <script>
 
+const config_defaults = {
+    tick_format: x => x
+}
 
 const wage_config = {
-    name: "minimum_wage",
+    ...config_defaults,
+    name: 'minimum_wage',
     field: "MinimumWage",
-    color: "yellow",
-    axis: d3.axisRight
+    label: (val) => {return '$' + parseInt(val).toFixed(2)},
+    color: 'red',
+    axis: d3.axisRight,
+    tick_format: (a) => {return '$'+ parseInt(a).toFixed(2)}
 };
 
 const cost_config = {
+    ...config_defaults,
     name: "costs",
     field: "AllCosts",
+    label: (val) => {return '$' + parseInt(val).toFixed(2)},
     color: "steelblue",
     axis: d3.axisLeft
 };
@@ -58,20 +66,27 @@ async function init() {
       .attr("transform", "translate(0," + height + ")")
       .call(d3.axisBottom(x)
         .ticks(d3.timeYear.every(5))
-      );
+      )
 
-    // Add Y axis
-    const ys = {};
+    // Add Y axes
+    const y = {};
+    const focus = {};
+    const focus_text = {};
+    
 
     data_sets.forEach((config) => {
-        y = d3.scaleLinear()
+        ys = d3.scaleLinear()
         .domain([0, d3.max(college_costs, function(d) { return +d[config.field]; })])
         .range([ height, 0 ]);
 
-        ys[config.name] = y;
+        y[config.name] = ys;
 
         svg.append("g")
-            .call(config.axis(y));   
+            .call(
+                config.axis(ys)
+                    .tickFormat(config.tick_format)
+            )
+            .attr("style","color:"+ config.color+ ";");;   
             
         svg.append("path")
             .datum(college_costs)
@@ -80,59 +95,30 @@ async function init() {
             .attr("stroke-width", 1.5)
             .attr("d", d3.line()
                 .x(function(d) { return x(parseDate(d.Year)) })
-                .y(function(d) { return y(d[config.field]) })
+                .y(function(d) { return ys(d[config.field]) })
                 )
+
+        // Todo: put in style
+        var f = svg
+            .append('g')
+            .append('circle')
+            .style("fill", "#333")
+            .attr("stroke", "black")
+            .attr('r', 4)
+            .style("opacity", 0.5);
+        
+        focus[config.name] = f;
+
+        var f_text = svg
+            .append('g')
+            .append('text')
+            .style("opacity", 0)
+            .attr("text-anchor", "left")
+            .attr("alignment-baseline", "middle");
+
+        focus_text[config.name] = f_text;
     });
 
-
-      // Create the circle that travels along the curve of chart
-  var focus = svg
-    .append('g')
-    .append('circle')
-      .style("fill", "none")
-      .attr("stroke", "black")
-      .attr('r', 8.5)
-      .style("opacity", 0)
-
-  // Create the text that travels along the curve of chart
-  var focusText = svg
-    .append('g')
-    .append('text')
-      .style("opacity", 0)
-      .attr("text-anchor", "left")
-      .attr("alignment-baseline", "middle")
-
-  var focus2 = svg
-    .append('g')
-    .append('circle')
-      .style("fill", "none")
-      .attr("stroke", "black")
-      .attr('r', 8.5)
-      .style("opacity", 0)
-
-  // Create the text that travels along the curve of chart
-  var focusText2 = svg
-    .append('g')
-    .append('text')
-      .style("opacity", 0)
-      .attr("text-anchor", "left")
-      .attr("alignment-baseline", "middle")
-
-  var focus3 = svg
-    .append('g')
-    .append('circle')
-      .style("fill", "none")
-      .attr("stroke", "black")
-      .attr('r', 8.5)
-      .style("opacity", 0)
-
-  // Create the text that travels along the curve of chart
-  var focusText3 = svg
-    .append('g')
-    .append('text')
-      .style("opacity", 0)
-      .attr("text-anchor", "left")
-      .attr("alignment-baseline", "middle")
 
   // Create a rect on top of the svg area: this rectangle recovers mouse position
   svg
@@ -151,12 +137,11 @@ async function init() {
 
   // What happens when the mouse move -> show the annotations at the right positions.
   function mouseover() {
-    focus.style("opacity", 1)
-    focusText.style("opacity",1)
-    // focus2.style("opacity", 1)
-    // focusText2.style("opacity",1)
-    focus3.style("opacity", 1)
-    focusText3.style("opacity",1)
+    data_sets.forEach((config) => {
+        focus[config.name].style("opacity", 1)
+        focus_text[config.name].style("opacity", 1)
+    });
+
   }
 
   function mousemove() {
@@ -174,47 +159,24 @@ async function init() {
     // console.log(text)
     text.innerHTML = hours_worked + " hours needed per week to pay for college"
 
-    focus
-      .attr("cx", x(parseDate(selectedData.Year)))
-      .attr("cy", y(selectedData[DATA_FIELD]))
-    focusText
-      .html("College cost: $" + selectedData[DATA_FIELD])
-      .attr("x", x(parseDate(selectedData.Year))+15)
-      .attr("y", y(selectedData[DATA_FIELD]))
+    data_sets.forEach((config) => {
+        focus[config.name]
+            .attr("cx", x(parseDate(selectedData.Year)))
+            .attr("cy", y[config.name](selectedData[config.field]))
+            .attr("stroke", config.color);
+        focus_text[config.name]
+            .html( config.label(selectedData[config.field]) )
+            .attr("x", x(parseDate(selectedData.Year))+15)
+            .attr("y", y[config.name](selectedData[config.field]))
+    });
 
-    
-    // focus2
-    //   .attr("cx", x(parseDate(selectedData.Year)))
-    //   .attr("cy", y(selectedData[WAGE_FIELD]))
-    // focusText2
-    //   .html("Year:" + selectedData.Year)
-    //   .attr("x", x(parseDate(selectedData.Year))+15)
-    //   .attr("y", height + 30)
+  }
 
-
-    focus3
-      .attr("cx", x(parseDate(selectedData.Year)))
-      .attr("cy", y2(selectedData[WAGE_FIELD]))
-    focusText3
-      .html("Minimum Wage: $" + selectedData[WAGE_FIELD])
-      .attr("x", x(parseDate(selectedData.Year))+15)
-      .attr("y", y2(selectedData[WAGE_FIELD]))
-
-
-    //   focus
-    //   .attr("cx", x(selectedData[DATA_FIELD]))
-    //   .attr("cy", y(selectedData.Year))
-    // focusText
-    //   .html("x:" + selectedData[DATA_FIELD] + "  -  " + "y:" + selectedData.Year)
-    //   .attr("x", x(selectedData[DATA_FIELD])+15)
-    //   .attr("y", y(selectedData.Year))
-
-    }
   function mouseout() {
-    focus.style("opacity", 0)
-    focusText.style("opacity", 0)
-    focus2.style("opacity", 0)
-    focusText2.style("opacity", 0)
+    data_sets.forEach((config) => {
+        focus[config.name].style("opacity", 0)
+        focus_text[config.name].style("opacity", 0)
+    });
   }
 
 }
