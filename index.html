@@ -3,17 +3,44 @@
 <style> circle {fill: lightblue; stroke: black;} </style>
 <body onload='init()'>
 <div id="chart"></div>
+<div id="desc">
+    hello!
+</div>
 <script>
+
+
+const wage_config = {
+    name: "minimum_wage",
+    field: "MinimumWage",
+    color: "yellow",
+    axis: d3.axisRight
+};
+
+const cost_config = {
+    name: "costs",
+    field: "AllCosts",
+    color: "steelblue",
+    axis: d3.axisLeft
+};
+
+
+const data_sets =  [wage_config, cost_config];
+
 
 async function init() {
     college_costs =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv")
-    minimum_wage =  await d3.csv( "https://sheidkamp.github.io/data/college/minimum_wage.csv")
 
+    const DATA_FIELD = "AllCosts";
+    const WAGE_FIELD = "MinimumWage";
 
     parseDate = d3.timeParse("%Y");
+    const formatTime = d3.timeFormat("%Y");
+
     var margin = {top: 10, right: 30, bottom: 30, left: 60},
     width = 760 - margin.left - margin.right,
     height = 400 - margin.top - margin.bottom;
+
+    var text = document.querySelector("#desc")
 
     var svg = d3.select("#chart")
         .append("svg")
@@ -34,53 +61,161 @@ async function init() {
       );
 
     // Add Y axis
-    var y = d3.scaleLinear()
-      .domain([0, d3.max(college_costs, function(d) { return +d["Public-TuitionAndFees"]; })])
-      .range([ height, 0 ]);
-    svg.append("g")
-      .call(d3.axisLeft(y));
+    const ys = {};
 
-    svg.append("path")
-      .datum(college_costs)
-      .attr("fill", "none")
-      .attr("stroke", "steelblue")
-      .attr("stroke-width", 1.5)
-      .attr("d", d3.line()
-        .x(function(d) { return x(parseDate(d.Year)) })
-        .y(function(d) { return y(d["Public-TuitionAndFees"]) })
-        )
+    data_sets.forEach((config) => {
+        y = d3.scaleLinear()
+        .domain([0, d3.max(college_costs, function(d) { return +d[config.field]; })])
+        .range([ height, 0 ]);
 
-    // *******************************************
-    // PART 2
-    // *******************************************
-    // Add X axis --> it is a year
-    //     var x = d3.scaleTime()
-    //   .domain(d3.extent(minimum_wage, function(d) { return parseDate(d.Year); }))
-    //   .range([ 0, width ]);
-    // svg.append("g")
-    //   .attr("transform", "translate(0," + height + ")")
-    //   .call(d3.axisBottom(x)
-    //     .ticks(d3.timeYear.every(5))
-    //   );
+        ys[config.name] = y;
 
-    // Add Y axis
-    var y = d3.scaleLinear()
-      .domain([0, d3.max(minimum_wage, function(d) { return +d.MinimumWage; })])
-      .range([ height, 0 ]);
-    svg.append("g")
-      .call(d3.axisRight(y));
-
-    svg.append("path")
-      .datum(minimum_wage)
-      .attr("fill", "none")
-      .attr("stroke", "yellow")
-      .attr("stroke-width", 1.5)
-      .attr("d", d3.line()
-        .x(function(d) { return x(parseDate(d.Year)) })
-        .y(function(d) { return y(d.MinimumWage) })
-        )
+        svg.append("g")
+            .call(config.axis(y));   
+            
+        svg.append("path")
+            .datum(college_costs)
+            .attr("fill", "none")
+            .attr("stroke", config.color)
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(function(d) { return x(parseDate(d.Year)) })
+                .y(function(d) { return y(d[config.field]) })
+                )
+    });
 
 
+      // Create the circle that travels along the curve of chart
+  var focus = svg
+    .append('g')
+    .append('circle')
+      .style("fill", "none")
+      .attr("stroke", "black")
+      .attr('r', 8.5)
+      .style("opacity", 0)
+
+  // Create the text that travels along the curve of chart
+  var focusText = svg
+    .append('g')
+    .append('text')
+      .style("opacity", 0)
+      .attr("text-anchor", "left")
+      .attr("alignment-baseline", "middle")
+
+  var focus2 = svg
+    .append('g')
+    .append('circle')
+      .style("fill", "none")
+      .attr("stroke", "black")
+      .attr('r', 8.5)
+      .style("opacity", 0)
+
+  // Create the text that travels along the curve of chart
+  var focusText2 = svg
+    .append('g')
+    .append('text')
+      .style("opacity", 0)
+      .attr("text-anchor", "left")
+      .attr("alignment-baseline", "middle")
+
+  var focus3 = svg
+    .append('g')
+    .append('circle')
+      .style("fill", "none")
+      .attr("stroke", "black")
+      .attr('r', 8.5)
+      .style("opacity", 0)
+
+  // Create the text that travels along the curve of chart
+  var focusText3 = svg
+    .append('g')
+    .append('text')
+      .style("opacity", 0)
+      .attr("text-anchor", "left")
+      .attr("alignment-baseline", "middle")
+
+  // Create a rect on top of the svg area: this rectangle recovers mouse position
+  svg
+    .append('rect')
+    .style("fill", "none")
+    .style("pointer-events", "all")
+    .attr('width', width)
+    .attr('height', height)
+    .on('mouseover', mouseover)
+    .on('mousemove', mousemove)
+    .on('mouseout', mouseout);
+
+
+  var bisect = d3.bisector(function(d) { return d.Year; }).left;
+
+
+  // What happens when the mouse move -> show the annotations at the right positions.
+  function mouseover() {
+    focus.style("opacity", 1)
+    focusText.style("opacity",1)
+    // focus2.style("opacity", 1)
+    // focusText2.style("opacity",1)
+    focus3.style("opacity", 1)
+    focusText3.style("opacity",1)
+  }
+
+  function mousemove() {
+    // recover coordinate we need
+    var x0 = formatTime(
+        x.invert(d3.mouse(this)[0])
+    );
+
+    var i = bisect(college_costs, x0, 1);
+
+    selectedData = college_costs[i];
+
+    hours_worked = Math.round(selectedData[DATA_FIELD] / selectedData[WAGE_FIELD]/52);
+    // console.log("hours needed", hours_worked)
+    // console.log(text)
+    text.innerHTML = hours_worked + " hours needed per week to pay for college"
+
+    focus
+      .attr("cx", x(parseDate(selectedData.Year)))
+      .attr("cy", y(selectedData[DATA_FIELD]))
+    focusText
+      .html("College cost: $" + selectedData[DATA_FIELD])
+      .attr("x", x(parseDate(selectedData.Year))+15)
+      .attr("y", y(selectedData[DATA_FIELD]))
+
+    
+    // focus2
+    //   .attr("cx", x(parseDate(selectedData.Year)))
+    //   .attr("cy", y(selectedData[WAGE_FIELD]))
+    // focusText2
+    //   .html("Year:" + selectedData.Year)
+    //   .attr("x", x(parseDate(selectedData.Year))+15)
+    //   .attr("y", height + 30)
+
+
+    focus3
+      .attr("cx", x(parseDate(selectedData.Year)))
+      .attr("cy", y2(selectedData[WAGE_FIELD]))
+    focusText3
+      .html("Minimum Wage: $" + selectedData[WAGE_FIELD])
+      .attr("x", x(parseDate(selectedData.Year))+15)
+      .attr("y", y2(selectedData[WAGE_FIELD]))
+
+
+    //   focus
+    //   .attr("cx", x(selectedData[DATA_FIELD]))
+    //   .attr("cy", y(selectedData.Year))
+    // focusText
+    //   .html("x:" + selectedData[DATA_FIELD] + "  -  " + "y:" + selectedData.Year)
+    //   .attr("x", x(selectedData[DATA_FIELD])+15)
+    //   .attr("y", y(selectedData.Year))
+
+    }
+  function mouseout() {
+    focus.style("opacity", 0)
+    focusText.style("opacity", 0)
+    focus2.style("opacity", 0)
+    focusText2.style("opacity", 0)
+  }
 
 }
 </script>
