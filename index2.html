@@ -1,0 +1,513 @@
+<html>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<style> circle {fill: lightblue; stroke: black;} </style>
+<body onload='init()'>
+<div id="chart"></div>
+<div id="summary"></div>
+<div id="slideshow" align=center width=500>
+    <button id='btn_next' onClick="lastSlide()">Prev</button>
+    <button id='btn_last' onClick="nextSlide()">Next</button>
+    <br>
+    <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Switch to Interactive Mode</button>
+</div>
+<div id="filters" align=center>
+    <table>
+        <tr valign="top"><td>
+            School type<br>
+            <input type="checkbox" id="type_all" checked onclick="toggleGraph('type_all')">All<br>
+            <input type="checkbox" id="type_public" onclick="toggleGraph('type_public')">Private<br>
+            <input type="checkbox" id="type_private" onclick="toggleGraph('type_provate')">Public<br>
+        </td><td>
+            Cost of<br>
+            <input type="checkbox" id="cost_tuition" onclick="toggleGraph('cost_tutition')">Tution and Fees Only<br>
+            <input type="checkbox" id="cost_all" checked onclick="toggleGraph('cost_all')">All Costs<br>
+        </td></tr>
+    </table>
+</div>
+<script>
+
+const SLIDESHOW = 'slideshow';
+const INTERACTIVE = 'interactive'
+
+let mode = SLIDESHOW;
+
+function toggleSlideshow() {
+    const butn_toggle = document.getElementById("btn_toggle_slideshow");
+    const btn_next = document.getElementById("btn_next");
+    const btn_last = document.getElementById("btn_last");
+
+    if (mode == SLIDESHOW) {
+        mode = INTERACTIVE;
+        butn_toggle.innerHTML = "Switch to Guided Mode";
+        btn_next.disabled = true;
+        btn_last.disabled = true;
+    }
+    else {
+        mode = SLIDESHOW;
+        butn_toggle.innerHTML = "Switch to Interactive Mode";
+        updateSlide();
+        btn_next.disabled = false;
+        btn_last.disabled = false;
+    }
+}
+
+const graph_colors = {
+    AllAllCosts: 'Yellow',
+    PrivateAllCosts: 'DarkOrange',
+    PublicAllCosts: 'RoyalBlue',
+    AllTuitionAndFees: 'Khaki',
+    PrivateTuitionAndFees: 'LightSalmon',
+    PublicTuitionAndFees: 'LightBlue'
+};
+
+const display_names = {
+    AllAllCosts: 'Public and Privates Colleges, All Costs',
+    PrivateAllCosts: 'CollegePrivate , All Costs',
+    PublicAllCosts: 'Public College, All Costs',
+    AllTuitionAndFees: 'Public and Privates Colleges, Tuition and Fees',
+    PrivateTuitionAndFees: 'Private College, Tuition and Fees',
+    PublicTuitionAndFees: 'Public College, Tuition and Fees'
+};
+
+function toggleGraph(updateVisuals = true) {
+    school_types = {
+        type_all: 'All',
+        type_private: 'Private',
+        type_public: 'Public'
+    };
+
+    cost_types = {
+        cost_all: 'AllCosts',
+        cost_tuition: 'TuitionAndFees'
+    };
+
+    const btn_values = {};
+    Object.keys({...school_types, ...cost_types}).forEach((name) => {
+        btn_values[name] = document.getElementById(name).checked;
+    });
+
+    clearVisualElements();
+    
+    cost_configs = [];
+    data_sets =  [wage_config];
+
+    Object.keys(school_types).forEach((school_type) => {
+        Object.keys(cost_types).forEach((cost_type) => {
+            if (!btn_values[school_type] || !btn_values[cost_type]) {
+                return;
+            }
+
+            let fieldname = school_types[school_type] + cost_types[cost_type];
+            const config = {
+                ...cost_defaults,
+                type: "cost",
+                name: fieldname,
+                field: fieldname,
+                label: (val) => {return '$' + parseInt(val)},
+                color: graph_colors[fieldname],
+                display_name: display_names[fieldname],
+                axis: d3.axisLeft,
+                tick_format: (a) => {return '$'+ parseInt(a)}
+            }
+
+            cost_configs.push(config);
+            data_sets.push(config);
+
+        });
+    });
+
+    if(updateVisuals) {
+        setVisualElements();
+        if(mode==SLIDESHOW) {
+            DrawChart(SLIDES[slide_index].year)
+        }
+    }
+
+
+}
+
+/********************
+ * 
+ * Slideshow stuff
+ * 
+ *******************/
+let slide_index = 0;
+
+const SLIDES = [
+    {
+        year: 1964,
+        text: "20 hours a week"
+    },
+    {
+        year: 1975,
+        text: "More expensive in the 70s"
+    },
+    {
+        year: 1984,
+        text: "Crazy 80s"
+    },
+    {
+        year: 1992,
+        text: "40 hours"
+    },
+    {
+        year: 2016,
+        text: "70 hours"
+    }
+];
+
+function nextSlide() {
+    if (slide_index < SLIDES.length-1) {
+        slide_index++;
+    }
+    updateSlide();
+}
+
+function lastSlide() {
+    if (slide_index > 0) {
+        slide_index--;
+    }
+    updateSlide();
+}
+
+function updateSlide() {
+    const slide = SLIDES[slide_index];
+    DrawChart(slide.year)
+}
+
+
+
+ /********************
+ * 
+ * Graph stuff
+ * 
+ *******************/
+const COST_AXIS_COLOR = 'steelblue';
+
+const config_defaults = {
+    tick_format: x => x
+};
+
+const cost_defaults = {
+    ...config_defaults,
+    line_color: COST_AXIS_COLOR
+}
+
+const wage_config = {
+    ...config_defaults,
+    type: "wage",
+    name: 'minimum_wage',
+    field: "MinimumWage",
+    label: (val) => {return '$' + parseFloat(val).toFixed(2)},
+    color: 'green',
+    axis: d3.axisRight,
+    tick_format: (a) => {return '$'+ parseFloat(a).toFixed(2)},
+};
+
+
+let data_sets = [];
+
+var y = {};
+var focus = {};
+var y_axes = {};
+var line_graphs = {};
+var x_grid_lines = {};
+
+
+var line;
+var x;
+var x_focus;
+
+var summary = document.querySelector("#summary")
+var margin = {top: 10, right: 30, bottom: 30, left: 60},
+    width = 760 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+let path;
+let svg;
+const formatTime = d3.timeFormat("%Y");
+let college_costs;
+const parseDate = d3.timeParse("%Y");
+
+
+function clearVisualElements() {
+    data_sets.forEach((config) => {
+        x_grid_lines[config.name].remove();
+        line_graphs[config.name].remove();
+        focus[config.name].remove();
+
+    });
+
+    if ( y_axes["cost"]) {
+        y_axes["cost"].remove();
+    }
+
+    y = {};
+    line_graphs = {};
+    focus = {};
+    x_grid_lines = {};
+
+}
+
+//
+//
+//
+async function init() {
+    college_costs =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv");
+    
+    
+    initializeVisualElements();
+    toggleGraph(false);
+    setVisualElements();
+    updateSlide();
+    
+}
+
+
+//
+//
+//
+function initializeVisualElements(){
+    svg = d3.select("#chart")
+        .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+    // Add X axis
+    x = d3.scaleTime()
+        .domain(d3.extent(college_costs, function(d) { return parseDate(d.Year); }))
+        .range([ 0, width ]);
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x)
+        .ticks(d3.timeYear.every(5))
+        );
+
+    // Add label/circle for year
+    // Todo: put in style
+    x_focus = svg
+        .append('g')
+        .append('circle')
+        .style("fill", "#333")
+        .attr("stroke", "black")
+        .attr('r', 4)
+        .style("opacity", 0.5);
+
+    // Add Y axes
+    line = svg
+        .append('g')
+        .append('line')
+        .style("stroke", "lightgray")
+        .style("stroke-width", 1);
+
+
+    //
+    //
+    //.
+    function mouseover() {
+
+        if (mode != INTERACTIVE) {
+            return;
+        }
+        data_sets.forEach((config) => {
+            focus[config.name].style("opacity", 0.5);
+        });
+
+        x_focus.style("opacity", 0.5);
+    }
+
+    //
+    //
+    //
+    function mousemove() {
+        if (mode != INTERACTIVE) {
+            return;
+        }
+
+        // recover coordinate we need
+        var x0 = formatTime(
+            x.invert(d3.mouse(this)[0])
+        );
+
+        DrawChart(x0);
+
+    }
+
+    // Create a rect on top of the svg area: this rectangle recovers mouse position
+    svg
+        .append('rect')
+        .style("fill", "none")
+        .style("pointer-events", "all")
+        .attr('width', width)
+        .attr('height', height)
+        .on('mouseover', mouseover)
+        .on('mousemove', mousemove);
+
+}
+
+//
+//
+//
+function setVisualElements() {
+
+    let ys = d3.scaleLinear()
+        .domain([0, d3.max(college_costs, function(d) { return +d[wage_config.field]; })])
+        .range([ height, 0 ]);
+
+    y['wage'] = ys;
+
+
+    y_axes['wage'] = svg.append("g")
+            .call(
+                wage_config.axis(ys)
+                    .tickFormat(wage_config.tick_format)
+            )
+           .attr("style","color:"+ wage_config.color + ";");
+
+
+    const cost_field_array = [];
+    cost_configs.forEach((config) => {
+        cost_field_array.push(config.field);
+    });
+
+    ys = d3.scaleLinear()
+        .domain([0, d3.max(college_costs, function(d) {
+            const values = [];
+            //console.log(d)
+            cost_field_array.forEach((val) => {
+                values.push(parseInt(d[val]));
+            })
+
+            //console.log("Max out of", values)
+            return d3.max(values); 
+        })])
+        .range([ height, 0 ]);
+
+
+    y_axes['cost'] = svg.append("g")
+        .call(
+            d3.axisLeft(ys)
+        )
+        .attr("style","color:"+ COST_AXIS_COLOR+ ";");
+
+    y['cost'] = ys;
+
+    //
+    data_sets.forEach((config) => {
+        ys = y[config.type];
+
+        x_grid_lines[config.name] = 
+            svg.append('g')
+            .append('line')
+            .style("stroke", config.line_color || config.color)
+            .style("stroke-width", 1)
+            .style("opacity", 0.3);
+            
+            
+        line_graphs[config.name] = svg
+            .append("g")
+            .append("path")
+            .datum(college_costs)
+            .attr("fill", "none")
+            .attr("stroke", config.color)
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+                .x(function(d) { return x(parseDate(d.Year)) })
+                .y(function(d) { return ys(d[config.field]) })
+                )
+
+        // Todo: put in style
+        var f = svg
+            .append('g')
+            .append('circle')
+            .style("fill", "#333")
+            .attr("stroke", "black")
+            .attr('r', 4)
+            .style("opacity", 0.5);
+        
+        focus[config.name] = f;
+
+    });
+
+    
+    svg.selectAll(".tick")
+        .each(function (d) {
+            if ( d === 0 ) {
+                this.remove();
+            }
+        });
+
+}
+
+
+var bisect = d3.bisector(function(d) { return d.Year; }).left;
+
+
+function DrawChartYear(year) {
+    let x0 = x(parseDate(year));
+    DrawChart(x0)
+}
+
+function generateSummary(selectedData) {
+    const table_start = "<table><tr><td>Type</td><td>Cost</td><td>Minimum Wage</td><td>Hours</td></tr>";
+    const table_end = "</table>";
+    let table_rows = '';
+
+    cost_configs.forEach((config) => {
+        hours_worked = Math.round(selectedData[config.field] / selectedData[wage_config.field]/52);
+        table_rows += 
+            "<tr bgcolor='" + config.color + "''><td>" + config.display_name +
+            "</td><td>" + selectedData[config.field] + 
+            "</td><td>" + selectedData[wage_config.field] + 
+            "</td><td>" + hours_worked + "</td></tr>";
+    });
+
+    let slide_text = '';
+
+    if (mode == SLIDESHOW) {
+        slide_text = SLIDES[slide_index].text + '<br>'
+    }
+    
+    summary.innerHTML = slide_text + table_start + table_rows + table_end;
+}
+
+function DrawChart(x0) {
+    var i = bisect(college_costs, x0, 1);
+    selectedData = college_costs[i];
+
+    generateSummary(selectedData)
+
+    // Graphs
+    data_sets.forEach((config) => {
+        focus[config.name]
+            .attr("cx", x(parseDate(selectedData.Year)))
+            .attr("cy", y[config.type](selectedData[config.field]))
+            .attr("stroke", 'black');
+
+        // Horizontal grid markers:
+        x_grid_lines[config.name]
+            .attr("x1", 0)
+            .attr("y1", y[config.type](selectedData[config.field]))
+            .attr("x2", x(parseDate(selectedData.Year)))
+            .attr("y2", y[config.type](selectedData[config.field]));
+    });
+
+    // Y-Axis
+    x_focus
+        .attr("cx", x(parseDate(selectedData.Year)))
+        .attr("cy", height)
+        .attr("stroke", 'black');
+
+    line.attr("x1", x(parseDate(selectedData.Year)))
+        .attr("y1", 0)
+        .attr("x2", x(parseDate(selectedData.Year)))
+        .attr("y2", height);
+
+    console.log("ok")
+}
+</script>
+</body>
+</html>
