@@ -41,6 +41,9 @@ function toggleSlideshow() {
         butn_toggle.innerHTML = "Switch to Guided Mode";
         btn_next.disabled = true;
         btn_last.disabled = true;
+        clearVisualElements();
+        setVisualElements();
+        DrawChart();
     }
     else {
         mode = SLIDESHOW;
@@ -172,6 +175,8 @@ function lastSlide() {
 
 function updateSlide() {
     const slide = SLIDES[slide_index];
+    clearVisualElements();
+    setVisualElements();
     DrawChart(slide.year)
 }
 
@@ -227,6 +232,7 @@ let path;
 let svg;
 const formatTime = d3.timeFormat("%Y");
 let college_costs;
+let display_college_costs;;
 const parseDate = d3.timeParse("%Y");
 
 
@@ -254,7 +260,6 @@ function clearVisualElements() {
 //
 async function init() {
     college_costs =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv");
-    
     
     initializeVisualElements();
     toggleGraph(false);
@@ -396,6 +401,9 @@ function setVisualElements() {
     y['cost'] = ys;
 
     //
+
+    const filtered_data = filterData();
+
     data_sets.forEach((config) => {
         ys = y[config.type];
 
@@ -406,11 +414,11 @@ function setVisualElements() {
             .style("stroke-width", 1)
             .style("opacity", 0.3);
             
-            
+
         line_graphs[config.name] = svg
             .append("g")
             .append("path")
-            .datum(college_costs)
+            .datum(filtered_data)
             .attr("fill", "none")
             .attr("stroke", config.color)
             .attr("stroke-width", 1.5)
@@ -508,6 +516,20 @@ function DrawChart(x0) {
 
     console.log("ok")
 }
+
+
+function filterData() {
+     
+    if (mode == INTERACTIVE) {
+        return college_costs;
+    }
+
+    const filter_by_year = (row) => { return row.Year <= SLIDES[slide_index].year}
+    return college_costs.filter(filter_by_year);
+
+
+}
+
 </script>
 </body>
 </html>
