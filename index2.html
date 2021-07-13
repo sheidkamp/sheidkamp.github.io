@@ -14,13 +14,13 @@
     <table>
         <tr valign="top"><td>
             School type<br>
-            <input type="checkbox" id="type_all" checked onclick="toggleGraph('type_all')">All<br>
-            <input type="checkbox" id="type_public" onclick="toggleGraph('type_public')">Private<br>
-            <input type="checkbox" id="type_private" onclick="toggleGraph('type_provate')">Public<br>
+            <input type="checkbox" id="type_all" checked onclick="toggleGraph()">All<br>
+            <input type="checkbox" id="type_public" onclick="toggleGraph()">Public<br>
+            <input type="checkbox" id="type_private" onclick="toggleGraph()">Private<br>
         </td><td>
             Cost of<br>
-            <input type="checkbox" id="cost_tuition" onclick="toggleGraph('cost_tutition')">Tution and Fees Only<br>
-            <input type="checkbox" id="cost_all" checked onclick="toggleGraph('cost_all')">All Costs<br>
+            <input type="checkbox" id="cost_tuition" onclick="toggleGraph()">Tution and Fees Only<br>
+            <input type="checkbox" id="cost_all" checked onclick="toggleGraph()">All Costs<br>
         </td></tr>
     </table>
 </div>
@@ -32,6 +32,9 @@ const INTERACTIVE = 'interactive'
 let mode = SLIDESHOW;
 
 function toggleSlideshow() {
+    
+    let filtered_data = filterData();
+
     const butn_toggle = document.getElementById("btn_toggle_slideshow");
     const btn_next = document.getElementById("btn_next");
     const btn_last = document.getElementById("btn_last");
@@ -41,18 +44,45 @@ function toggleSlideshow() {
         butn_toggle.innerHTML = "Switch to Guided Mode";
         btn_next.disabled = true;
         btn_last.disabled = true;
-        clearVisualElements();
-        setVisualElements();
-        DrawChart();
+        target_year = SLIDES[SLIDES.length-1].year;
+        //target_max_y = current_max_y;
+        _setInterval('year_interval',animateYear, 20);
     }
     else {
         mode = SLIDESHOW;
         butn_toggle.innerHTML = "Switch to Interactive Mode";
-        updateSlide();
+        updateSlide(20);
         btn_next.disabled = false;
         btn_last.disabled = false;
     }
 }
+
+const intervals = {};
+function _setInterval(name, action, speed) {
+    console.log("Setting interval", name);
+    document.getElementById("btn_toggle_slideshow").disabled = true;
+    document.getElementById("btn_next").disabled = true;
+    document.getElementById("btn_last").disabled = true;
+
+    intervals[name] = setInterval(action, speed);
+}
+
+
+function _clearInterval(name) {
+    console.log("clearing interval", intervals[name]);
+    clearInterval(intervals[name]);
+    delete intervals[name];
+
+    if (Object.keys(intervals).length == 0) {
+        document.getElementById("btn_toggle_slideshow").disabled = false;
+
+        if (mode == SLIDESHOW) {
+            document.getElementById("btn_next").disabled = false;
+            document.getElementById("btn_last").disabled = false;
+        }
+    }
+}
+
 
 const graph_colors = {
     AllAllCosts: 'Yellow',
@@ -110,7 +140,8 @@ function toggleGraph(updateVisuals = true) {
                 color: graph_colors[fieldname],
                 display_name: display_names[fieldname],
                 axis: d3.axisLeft,
-                tick_format: (a) => {return '$'+ parseInt(a)}
+                //tick_format: (a) => {return '$'+ parseInt(a)},
+                tick_format: (a) => {return '$'+ parseFloat(a).toFixed(2)}
             }
 
             cost_configs.push(config);
@@ -138,7 +169,7 @@ let slide_index = 0;
 
 const SLIDES = [
     {
-        year: 1964,
+        year: 1968,
         text: "20 hours a week"
     },
     {
@@ -159,6 +190,14 @@ const SLIDES = [
     }
 ];
 
+let year_interval;
+let current_year = SLIDES[slide_index].year;
+let target_year;
+
+let y_axis_interval;
+let target_max_y;
+let current_max_y = 1;
+
 function nextSlide() {
     if (slide_index < SLIDES.length-1) {
         slide_index++;
@@ -173,11 +212,48 @@ function lastSlide() {
     updateSlide();
 }
 
-function updateSlide() {
+function updateSlide(speed=50) {
     const slide = SLIDES[slide_index];
+
+    target_year = slide.year;
+    _setInterval("year_interval", animateYear, speed);
+}
+
+
+function animateYear() {
+    console.log(target_year, current_year);
+    if(target_year > current_year) {
+        current_year++;
+    }
+    else if (target_year < current_year) {
+        current_year--  ;
+    }
+    else {
+        console.log("Clearing interval");
+        _clearInterval("year_interval");
+    }
     clearVisualElements();
     setVisualElements();
-    DrawChart(slide.year)
+    DrawChart(current_year);
+    
+}
+
+
+function animateYAxis() {
+    console.log(target_max_y, current_max_y);
+    if(target_max_y > current_year) {
+        current_year++;
+    }
+    else if (target_max_y < current_max_y) {
+        current_year--  ;
+    }
+    else {
+        clearInterval(y_axis_interval);
+    }
+    clearVisualElements();
+    setVisualElements();
+    DrawChart();
+    
 }
 
 
@@ -230,10 +306,12 @@ var margin = {top: 10, right: 30, bottom: 30, left: 60},
 
 let path;
 let svg;
-const formatTime = d3.timeFormat("%Y");
+
 let college_costs;
-let display_college_costs;;
+let display_college_costs;
+
 const parseDate = d3.timeParse("%Y");
+const formatTime = d3.timeFormat("%Y");
 
 
 function clearVisualElements() {
@@ -246,6 +324,10 @@ function clearVisualElements() {
 
     if ( y_axes["cost"]) {
         y_axes["cost"].remove();
+    }
+
+    if ( y_axes["wage"]) {
+        y_axes["wage"].remove();
     }
 
     y = {};
@@ -358,8 +440,29 @@ function initializeVisualElements(){
 //
 function setVisualElements() {
 
+    let filtered_data = filterData();
+
+    draw_max_y = d3.max(filterData(), function(d) {
+            const cost_field_array = [];
+            cost_configs.forEach((config) => {
+                cost_field_array.push(config.field);
+            });
+            const values = [];
+            //console.log(d)
+            cost_field_array.forEach((val) => {
+                values.push(parseInt(d[val]));
+            })
+
+            values.push(1000*parseInt("MinimumWage"))
+
+            //console.log("Max out of", values)
+            return d3.max(values); 
+        });
+    
+        console.log(draw_max_y)
+
     let ys = d3.scaleLinear()
-        .domain([0, d3.max(college_costs, function(d) { return +d[wage_config.field]; })])
+        .domain([0, 0.001 * draw_max_y])
         .range([ height, 0 ]);
 
     y['wage'] = ys;
@@ -373,22 +476,9 @@ function setVisualElements() {
            .attr("style","color:"+ wage_config.color + ";");
 
 
-    const cost_field_array = [];
-    cost_configs.forEach((config) => {
-        cost_field_array.push(config.field);
-    });
 
     ys = d3.scaleLinear()
-        .domain([0, d3.max(college_costs, function(d) {
-            const values = [];
-            //console.log(d)
-            cost_field_array.forEach((val) => {
-                values.push(parseInt(d[val]));
-            })
-
-            //console.log("Max out of", values)
-            return d3.max(values); 
-        })])
+        .domain([0, draw_max_y])
         .range([ height, 0 ]);
 
 
@@ -401,9 +491,6 @@ function setVisualElements() {
     y['cost'] = ys;
 
     //
-
-    const filtered_data = filterData();
-
     data_sets.forEach((config) => {
         ys = y[config.type];
 
@@ -519,14 +606,12 @@ function DrawChart(x0) {
 
 
 function filterData() {
-     
-    if (mode == INTERACTIVE) {
+    if (mode == INTERACTIVE && current_year == target_year) {
         return college_costs;
     }
 
-    const filter_by_year = (row) => { return row.Year <= SLIDES[slide_index].year}
+    const filter_by_year = (row) => { return row.Year <= current_year}
     return college_costs.filter(filter_by_year);
-
 
 }
 
