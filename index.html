@@ -4,7 +4,7 @@
 <body onload='init()'>
 <div id="chart"></div>
 <div id="summary"></div>
-<div id="slideshow" align=center>
+<div id="slideshow" align=center width=500>
     <button id='btn_next' onClick="lastSlide()">Prev</button>
     <button id='btn_last' onClick="nextSlide()">Next</button>
     <br>
@@ -12,12 +12,15 @@
 </div>
 <div id="filters" align=center>
     <table>
-        <tr><td>
+        <tr valign="top"><td>
             School type<br>
-            <input type="checkbox" name="type_all" checked>All<br>
-            <input type="checkbox" name="type_public">Private<br>
-            <input type="checkbox" name="type_private">Public<br>
-        <td></td>
+            <input type="checkbox" id="type_all" checked onclick="toggleGraph('type_all')">All<br>
+            <input type="checkbox" id="type_public" onclick="toggleGraph('type_public')">Private<br>
+            <input type="checkbox" id="type_private" onclick="toggleGraph('type_provate')">Public<br>
+        </td><td>
+            Cost of<br>
+            <input type="checkbox" id="cost_tuition" onclick="toggleGraph('cost_tutition')">Tution and Fees Only<br>
+            <input type="checkbox" id="cost_all" checked onclick="toggleGraph('cost_all')">All Costs<br>
         </td></tr>
     </table>
 </div>
@@ -46,6 +49,81 @@ function toggleSlideshow() {
         btn_next.disabled = false;
         btn_last.disabled = false;
     }
+}
+
+const graph_colors = {
+    AllAllCosts: 'Yellow',
+    PrivateAllCosts: 'DarkOrange',
+    PublicAllCosts: 'RoyalBlue',
+    AllTuitionAndFees: 'Khaki',
+    PrivateTuitionAndFees: 'LightSalmon',
+    PublicTuitionAndFees: 'LightBlue'
+};
+
+const display_names = {
+    AllAllCosts: 'Public and Privates Colleges, All Costs',
+    PrivateAllCosts: 'CollegePrivate , All Costs',
+    PublicAllCosts: 'Public College, All Costs',
+    AllTuitionAndFees: 'Public and Privates Colleges, Tuition and Fees',
+    PrivateTuitionAndFees: 'Private College, Tuition and Fees',
+    PublicTuitionAndFees: 'Public College, Tuition and Fees'
+};
+
+function toggleGraph(updateVisuals = true) {
+    school_types = {
+        type_all: 'All',
+        type_private: 'Private',
+        type_public: 'Public'
+    };
+
+    cost_types = {
+        cost_all: 'AllCosts',
+        cost_tuition: 'TuitionAndFees'
+    };
+
+    const btn_values = {};
+    Object.keys({...school_types, ...cost_types}).forEach((name) => {
+        btn_values[name] = document.getElementById(name).checked;
+    });
+
+    clearVisualElements();
+    
+    cost_configs = [];
+    data_sets =  [wage_config];
+
+    Object.keys(school_types).forEach((school_type) => {
+        Object.keys(cost_types).forEach((cost_type) => {
+            if (!btn_values[school_type] || !btn_values[cost_type]) {
+                return;
+            }
+
+            let fieldname = school_types[school_type] + cost_types[cost_type];
+            const config = {
+                ...cost_defaults,
+                type: "cost",
+                name: fieldname,
+                field: fieldname,
+                label: (val) => {return '$' + parseInt(val)},
+                color: graph_colors[fieldname],
+                display_name: display_names[fieldname],
+                axis: d3.axisLeft,
+                tick_format: (a) => {return '$'+ parseInt(a)}
+            }
+
+            cost_configs.push(config);
+            data_sets.push(config);
+
+        });
+    });
+
+    if(updateVisuals) {
+        setVisualElements();
+        if(mode==SLIDESHOW) {
+            DrawChart(SLIDES[slide_index].year)
+        }
+    }
+
+
 }
 
 /********************
@@ -94,7 +172,6 @@ function lastSlide() {
 
 function updateSlide() {
     const slide = SLIDES[slide_index];
-    console.log(slide.year)
     DrawChart(slide.year)
 }
 
@@ -111,7 +188,7 @@ const config_defaults = {
     tick_format: x => x
 };
 
-const cost_deaults = {
+const cost_defaults = {
     ...config_defaults,
     line_color: COST_AXIS_COLOR
 }
@@ -127,54 +204,8 @@ const wage_config = {
     tick_format: (a) => {return '$'+ parseFloat(a).toFixed(2)},
 };
 
-const cost_configs = [
-    {
-        ...cost_deaults,
-        type: "cost",
-        name: "all costs",
-        field: "AllCosts",
-        label: (val) => {return '$' + parseInt(val)},
-        color: "red",
-        axis: d3.axisLeft,
-        tick_format: (a) => {return '$'+ parseInt(a)}
-    },
 
-    {
-        ...cost_deaults,
-        type: "cost",
-        name: "private costs",
-        field: "PrivateAllCosts",
-        label: (val) => {return '$' + parseInt(val)},
-        color: "pink",
-        axis: d3.axisLeft,
-        tick_format: (a) => {return '$'+ parseInt(a)}
-    }
-];
-    
-// const cost_config = {
-//     ...config_defaults,
-//     name: "all costs",
-//     field: "AllCosts",
-//     label: (val) => {return '$' + parseInt(val)},
-//     color: "red",
-//     axis: d3.axisLeft,
-//     tick_format: (a) => {return '$'+ parseInt(a)}
-// };
-
-// const cost_config_2 = {
-//     ...config_defaults,
-//     name: "private costs",
-//     field: "PrivateAllCosts",
-//     label: (val) => {return '$' + parseInt(val)},
-//     color: "pink",
-//     axis: d3.axisLeft,
-//     tick_format: (a) => {return '$'+ parseInt(a)}
-// };
-
-const data_sets =  [wage_config, ...cost_configs];
-
-var DATA_FIELD = "AllCosts";
-const WAGE_FIELD = "MinimumWage";
+let data_sets = [];
 
 var y = {};
 var focus = {};
@@ -199,34 +230,23 @@ let college_costs;
 const parseDate = d3.timeParse("%Y");
 
 
-function updateDataField(new_field) {
-    selectedData = college_costs[0];
+function clearVisualElements() {
+    data_sets.forEach((config) => {
+        x_grid_lines[config.name].remove();
+        line_graphs[config.name].remove();
+        focus[config.name].remove();
 
-    if( selectedData[new_field]) {
-        DATA_FIELD = new_field;
-        cost_config.field = new_field;
+    });
 
-        
-        data_sets.forEach((config) => {
-            y_axes[config.name].remove();
-            x_grid_lines[config.name].remove();
-            line_graphs[config.name].remove();
-            focus[config.name].remove();
-
-        });
-
-        y = {};
-        y_axes = {};
-        line_graphs = {};
-        focus = {};
-        x_grid_lines = {};
-
-
-        setVisualElements();
+    if ( y_axes["cost"]) {
+        y_axes["cost"].remove();
     }
-    else {
-        console.log("Unknown field:", new_field);
-    }
+
+    y = {};
+    line_graphs = {};
+    focus = {};
+    x_grid_lines = {};
+
 }
 
 //
@@ -235,9 +255,12 @@ function updateDataField(new_field) {
 async function init() {
     college_costs =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv");
     
+    
     initializeVisualElements();
+    toggleGraph(false);
     setVisualElements();
     updateSlide();
+    
 }
 
 
@@ -334,15 +357,15 @@ function setVisualElements() {
         .domain([0, d3.max(college_costs, function(d) { return +d[wage_config.field]; })])
         .range([ height, 0 ]);
 
-    // Specifically handle the axes:
+    y['wage'] = ys;
+
+
     y_axes['wage'] = svg.append("g")
             .call(
                 wage_config.axis(ys)
                     .tickFormat(wage_config.tick_format)
             )
-            .attr("style","color:"+ wage_config.color+ ";");
-
-    y['wage'] = ys;
+           .attr("style","color:"+ wage_config.color + ";");
 
 
     const cost_field_array = [];
@@ -353,13 +376,16 @@ function setVisualElements() {
     ys = d3.scaleLinear()
         .domain([0, d3.max(college_costs, function(d) {
             const values = [];
+            //console.log(d)
             cost_field_array.forEach((val) => {
-                values.push(val);
+                values.push(parseInt(d[val]));
             })
 
-            return +d[d3.max(values)]; 
+            //console.log("Max out of", values)
+            return d3.max(values); 
         })])
         .range([ height, 0 ]);
+
 
     y_axes['cost'] = svg.append("g")
         .call(
@@ -431,11 +457,11 @@ function generateSummary(selectedData) {
     let table_rows = '';
 
     cost_configs.forEach((config) => {
-        hours_worked = Math.round(selectedData[config.field] / selectedData[WAGE_FIELD]/52);
+        hours_worked = Math.round(selectedData[config.field] / selectedData[wage_config.field]/52);
         table_rows += 
-            "<tr><td>" + config.name +
+            "<tr bgcolor='" + config.color + "''><td>" + config.display_name +
             "</td><td>" + selectedData[config.field] + 
-            "</td><td>" + selectedData[WAGE_FIELD] + 
+            "</td><td>" + selectedData[wage_config.field] + 
             "</td><td>" + hours_worked + "</td></tr>";
     });
 
