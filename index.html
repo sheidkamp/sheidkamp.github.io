@@ -2,27 +2,33 @@
 <script src='https://d3js.org/d3.v5.min.js'></script>
 <style> circle {fill: lightblue; stroke: black;} </style>
 <body onload='init()'>
-<div id="chart"></div>
-<div id="summary"></div>
-<div id="slideshow" align=center width=500>
-    <button id='btn_next' onClick="lastSlide()">Prev</button>
-    <button id='btn_last' onClick="nextSlide()">Next</button>
-    <br>
-    <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Switch to Interactive Mode</button>
-</div>
-<div id="filters" align=center>
-    <table>
-        <tr valign="top"><td>
-            School type<br>
-            <input type="checkbox" id="type_all" checked onclick="toggleGraph('type_all')">All<br>
-            <input type="checkbox" id="type_public" onclick="toggleGraph('type_public')">Private<br>
-            <input type="checkbox" id="type_private" onclick="toggleGraph('type_provate')">Public<br>
-        </td><td>
-            Cost of<br>
-            <input type="checkbox" id="cost_tuition" onclick="toggleGraph('cost_tutition')">Tution and Fees Only<br>
-            <input type="checkbox" id="cost_all" checked onclick="toggleGraph('cost_all')">All Costs<br>
-        </td></tr>
-    </table>
+<div align = center width=500>
+    <div id="chart" align=center></div>
+    <div id="chart2" align=center></div>
+
+    <div id="summary" align=center width=500></div>
+
+    <div id="filters" width=500>
+        <table>
+            <tr valign="top"><td>
+                School type<br>
+                <input type="checkbox" id="type_all"  onclick="toggleGraph()">All<br>
+                <input type="checkbox" id="type_public" checked onclick="toggleGraph()">Public<br>
+                <input type="checkbox" id="type_private" onclick="toggleGraph()">Private<br>
+            </td><td>
+                Cost of<br>
+                <input type="checkbox" id="cost_all" checked onclick="toggleGraph()">All Costs<br>
+                <input type="checkbox" id="cost_tuition" onclick="toggleGraph()">Tution and Fees Only<br>
+            </td></tr>
+        </table>
+    </div>
+    <div id="slideshow" align=center width=500>
+        <button id='btn_next' onClick="lastSlide()">Prev</button>
+        <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Slideshow</button>
+        <button id='btn_last' onClick="nextSlide()">Next</button>
+        <br>
+    
+    </div>
 </div>
 <script>
 
@@ -32,24 +38,58 @@ const INTERACTIVE = 'interactive'
 let mode = SLIDESHOW;
 
 function toggleSlideshow() {
+    
+    let filtered_data = filterData();
+
     const butn_toggle = document.getElementById("btn_toggle_slideshow");
     const btn_next = document.getElementById("btn_next");
     const btn_last = document.getElementById("btn_last");
 
     if (mode == SLIDESHOW) {
         mode = INTERACTIVE;
-        butn_toggle.innerHTML = "Switch to Guided Mode";
+        butn_toggle.innerHTML = "Restart Slideshow";
         btn_next.disabled = true;
         btn_last.disabled = true;
+        target_year = SLIDES[SLIDES.length-1].year;
+        //target_max_y = current_max_y;
+        _setInterval('year_interval',animateYear, 20);
     }
     else {
         mode = SLIDESHOW;
-        butn_toggle.innerHTML = "Switch to Interactive Mode";
-        updateSlide();
+        butn_toggle.innerHTML = "Stop Slideshow";
+        slide_index=0;
+        updateSlide(20);
         btn_next.disabled = false;
         btn_last.disabled = false;
     }
 }
+
+const intervals = {};
+function _setInterval(name, action, speed) {
+    //console.log("Setting interval", name);
+    document.getElementById("btn_toggle_slideshow").disabled = true;
+    document.getElementById("btn_next").disabled = true;
+    document.getElementById("btn_last").disabled = true;
+
+    intervals[name] = setInterval(action, speed);
+}
+
+
+function _clearInterval(name) {
+    //console.log("clearing interval", intervals[name]);
+    clearInterval(intervals[name]);
+    delete intervals[name];
+
+    if (Object.keys(intervals).length == 0) {
+        document.getElementById("btn_toggle_slideshow").disabled = false;
+
+        if (mode == SLIDESHOW) {
+            document.getElementById("btn_next").disabled = false;
+            document.getElementById("btn_last").disabled = false;
+        }
+    }
+}
+
 
 const graph_colors = {
     AllAllCosts: 'Yellow',
@@ -107,7 +147,8 @@ function toggleGraph(updateVisuals = true) {
                 color: graph_colors[fieldname],
                 display_name: display_names[fieldname],
                 axis: d3.axisLeft,
-                tick_format: (a) => {return '$'+ parseInt(a)}
+                //tick_format: (a) => {return '$'+ parseInt(a)},
+                tick_format: (a) => {return '$'+ parseFloat(a).toFixed(2)}
             }
 
             cost_configs.push(config);
@@ -135,7 +176,7 @@ let slide_index = 0;
 
 const SLIDES = [
     {
-        year: 1964,
+        year: 1968,
         text: "20 hours a week"
     },
     {
@@ -151,10 +192,23 @@ const SLIDES = [
         text: "40 hours"
     },
     {
-        year: 2016,
+        year: 2005,
+        text: "40 hours"
+    },
+    {
+        year: 2019,
         text: "70 hours"
     }
 ];
+
+let year_interval;
+let current_year = SLIDES[slide_index].year;
+let target_year;
+
+let y_axis_interval;
+let target_max_y;
+let current_max_y = 1;
+let max_y_animate_direction = "";
 
 function nextSlide() {
     if (slide_index < SLIDES.length-1) {
@@ -170,9 +224,50 @@ function lastSlide() {
     updateSlide();
 }
 
-function updateSlide() {
+function updateSlide(speed=50) {
     const slide = SLIDES[slide_index];
-    DrawChart(slide.year)
+
+    target_year = slide.year;
+    _setInterval("year_interval", animateYear, speed);
+}
+
+
+function animateYear() {
+    //console.log(target_year, current_year);
+    if(target_year > current_year) {
+        current_year++;
+    }
+    else if (target_year < current_year) {
+        current_year--  ;
+    }
+    else {
+        _clearInterval("year_interval");
+    }
+    clearVisualElements();
+    setVisualElements();
+    DrawChart(current_year);
+    
+}
+
+
+function animateYAxis() {
+    console.log(target_max_y, current_max_y);
+    if(target_max_y > current_year) {
+        current_year++;
+        max_y_animate_direction = "up";
+    }
+    else if (target_max_y < current_max_y) {
+        current_year--  ;
+        max_y_animate_direction = "down";
+    }
+    else {
+        max_y_animate_direction = "";
+        clearInterval(y_axis_interval);
+    }
+    clearVisualElements();
+    setVisualElements();
+    DrawChart();
+    
 }
 
 
@@ -213,21 +308,30 @@ var y_axes = {};
 var line_graphs = {};
 var x_grid_lines = {};
 
-
 var line;
 var x;
 var x_focus;
 
+// Chart2 section
+let y_axis2;
+let graph2;
+let line2;
+
 var summary = document.querySelector("#summary")
-var margin = {top: 10, right: 30, bottom: 30, left: 60},
-    width = 760 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
+var margin = {top: 10, right: 30, bottom: 30, left: 60};
+var width = 760 - margin.left - margin.right;
+var height = 350 - margin.top - margin.bottom;
+var height2 = 150 - margin.top - margin.bottom;
 
 let path;
 let svg;
-const formatTime = d3.timeFormat("%Y");
+let svg2;
+
 let college_costs;
+let display_college_costs;
+
 const parseDate = d3.timeParse("%Y");
+const formatTime = d3.timeFormat("%Y");
 
 
 function clearVisualElements() {
@@ -235,12 +339,13 @@ function clearVisualElements() {
         x_grid_lines[config.name].remove();
         line_graphs[config.name].remove();
         focus[config.name].remove();
-
     });
 
-    if ( y_axes["cost"]) {
-        y_axes["cost"].remove();
-    }
+    if ( y_axes["cost"]) { y_axes["cost"].remove(); }
+    if ( y_axes["wage"]) { y_axes["wage"].remove(); }
+    if (y_axis2) {y_axis2.remove(); }
+    if (graph2) {graph2.remove();}
+    if (line2) {line2.remove();}
 
     y = {};
     line_graphs = {};
@@ -249,12 +354,9 @@ function clearVisualElements() {
 
 }
 
-//
-//
-//
+
 async function init() {
     college_costs =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv");
-    
     
     initializeVisualElements();
     toggleGraph(false);
@@ -264,9 +366,6 @@ async function init() {
 }
 
 
-//
-//
-//
 function initializeVisualElements(){
     svg = d3.select("#chart")
         .append("svg")
@@ -276,14 +375,29 @@ function initializeVisualElements(){
             .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
 
+    svg2 = d3.select("#chart2")
+        .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height2 + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
     // Add X axis
     x = d3.scaleTime()
         .domain(d3.extent(college_costs, function(d) { return parseDate(d.Year); }))
         .range([ 0, width ]);
+
     svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x)
-        .ticks(d3.timeYear.every(5))
+            .ticks(d3.timeYear.every(5))
+        );
+
+    svg2.append("g")
+        .attr("transform", "translate(0," + height2 + ")")
+        .call(d3.axisBottom(x)
+            .ticks(d3.timeYear.every(5))
         );
 
     // Add label/circle for year
@@ -296,7 +410,7 @@ function initializeVisualElements(){
         .attr('r', 4)
         .style("opacity", 0.5);
 
-    // Add Y axes
+    // Add guideline
     line = svg
         .append('g')
         .append('line')
@@ -304,9 +418,6 @@ function initializeVisualElements(){
         .style("stroke-width", 1);
 
 
-    //
-    //
-    //.
     function mouseover() {
 
         if (mode != INTERACTIVE) {
@@ -319,9 +430,6 @@ function initializeVisualElements(){
         x_focus.style("opacity", 0.5);
     }
 
-    //
-    //
-    //
     function mousemove() {
         if (mode != INTERACTIVE) {
             return;
@@ -346,6 +454,15 @@ function initializeVisualElements(){
         .on('mouseover', mouseover)
         .on('mousemove', mousemove);
 
+    svg2
+        .append('rect')
+        .style("fill", "none")
+        .style("pointer-events", "all")
+        .attr('width', width)
+        .attr('height', height2)
+        .on('mouseover', mouseover)
+        .on('mousemove', mousemove);
+
 }
 
 //
@@ -353,8 +470,28 @@ function initializeVisualElements(){
 //
 function setVisualElements() {
 
+    let filtered_data = filterData();
+
+    target_max_y = d3.max(filterData(), function(d) {
+            const cost_field_array = [];
+            cost_configs.forEach((config) => {
+                cost_field_array.push(config.field);
+            });
+            const values = [];
+            //console.log(d)
+            cost_field_array.forEach((val) => {
+                values.push(parseInt(d[val]));
+            })
+
+            values.push(1000*parseFloat(d["MinimumWage"]))
+
+            //console.log("Max out of", values)
+            return d3.max(values); 
+        });
+    
+
     let ys = d3.scaleLinear()
-        .domain([0, d3.max(college_costs, function(d) { return +d[wage_config.field]; })])
+        .domain([0, 0.001 * target_max_y])
         .range([ height, 0 ]);
 
     y['wage'] = ys;
@@ -368,22 +505,9 @@ function setVisualElements() {
            .attr("style","color:"+ wage_config.color + ";");
 
 
-    const cost_field_array = [];
-    cost_configs.forEach((config) => {
-        cost_field_array.push(config.field);
-    });
 
     ys = d3.scaleLinear()
-        .domain([0, d3.max(college_costs, function(d) {
-            const values = [];
-            //console.log(d)
-            cost_field_array.forEach((val) => {
-                values.push(parseInt(d[val]));
-            })
-
-            //console.log("Max out of", values)
-            return d3.max(values); 
-        })])
+        .domain([0, target_max_y])
         .range([ height, 0 ]);
 
 
@@ -395,6 +519,7 @@ function setVisualElements() {
 
     y['cost'] = ys;
 
+    
     //
     data_sets.forEach((config) => {
         ys = y[config.type];
@@ -406,11 +531,11 @@ function setVisualElements() {
             .style("stroke-width", 1)
             .style("opacity", 0.3);
             
-            
+
         line_graphs[config.name] = svg
             .append("g")
             .append("path")
-            .datum(college_costs)
+            .datum(filtered_data)
             .attr("fill", "none")
             .attr("stroke", config.color)
             .attr("stroke-width", 1.5)
@@ -432,6 +557,32 @@ function setVisualElements() {
 
     });
 
+    // Little chart
+
+
+    let y2 = d3.scaleLinear()
+        .domain([0, 80])
+        .range([ height2, 0 ]);
+    
+    y_axis2 = svg2.append("g")
+        .call(
+            d3.axisLeft(y2)
+        )
+        .attr("style","color:"+ COST_AXIS_COLOR+ ";");
+
+    let MAIN_FIELD = 'PublicAllCosts';
+    graph2 = svg2
+        .append("g")
+        .append("path")
+        .datum(filtered_data)
+        .attr("fill", "none")
+        .attr("stroke", 'red')
+        .attr("stroke-width", 1.5)
+        .attr("d", d3.line()
+            .x(function(d) { return x(parseDate(d.Year)) })
+            .y(function(d) { return y2( (1.0*d[MAIN_FIELD]) / (52.0*d["MinimumWage"])) })
+            )
+
     
     svg.selectAll(".tick")
         .each(function (d) {
@@ -439,6 +590,8 @@ function setVisualElements() {
                 this.remove();
             }
         });
+
+        console.log("Done")
 
 }
 
@@ -495,7 +648,7 @@ function DrawChart(x0) {
             .attr("y2", y[config.type](selectedData[config.field]));
     });
 
-    // Y-Axis
+
     x_focus
         .attr("cx", x(parseDate(selectedData.Year)))
         .attr("cy", height)
@@ -508,6 +661,18 @@ function DrawChart(x0) {
 
     console.log("ok")
 }
+
+
+function filterData() {
+    if (mode == INTERACTIVE && current_year == target_year) {
+        return college_costs;
+    }
+
+    const filter_by_year = (row) => { return row.Year <= current_year}
+    return college_costs.filter(filter_by_year);
+
+}
+
 </script>
 </body>
 </html>

@@ -2,27 +2,31 @@
 <script src='https://d3js.org/d3.v5.min.js'></script>
 <style> circle {fill: lightblue; stroke: black;} </style>
 <body onload='init()'>
-<div id="chart"></div>
-<div id="summary"></div>
-<div id="slideshow" align=center width=500>
-    <button id='btn_next' onClick="lastSlide()">Prev</button>
-    <button id='btn_last' onClick="nextSlide()">Next</button>
-    <br>
-    <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Slideshow</button>
-</div>
-<div id="filters" align=center>
-    <table>
-        <tr valign="top"><td>
-            School type<br>
-            <input type="checkbox" id="type_all" checked onclick="toggleGraph()">All<br>
-            <input type="checkbox" id="type_public" onclick="toggleGraph()">Public<br>
-            <input type="checkbox" id="type_private" onclick="toggleGraph()">Private<br>
-        </td><td>
-            Cost of<br>
-            <input type="checkbox" id="cost_tuition" onclick="toggleGraph()">Tution and Fees Only<br>
-            <input type="checkbox" id="cost_all" checked onclick="toggleGraph()">All Costs<br>
-        </td></tr>
-    </table>
+<div align = center width=500>
+    <div id="chart" align=center></div>
+    <div id="summary" align=center width=500></div>
+
+    <div id="filters" width=500>
+        <table>
+            <tr valign="top"><td>
+                School type<br>
+                <input type="checkbox" id="type_all"  onclick="toggleGraph()">All<br>
+                <input type="checkbox" id="type_public" checked onclick="toggleGraph()">Public<br>
+                <input type="checkbox" id="type_private" onclick="toggleGraph()">Private<br>
+            </td><td>
+                Cost of<br>
+                <input type="checkbox" id="cost_all" checked onclick="toggleGraph()">All Costs<br>
+                <input type="checkbox" id="cost_tuition" onclick="toggleGraph()">Tution and Fees Only<br>
+            </td></tr>
+        </table>
+    </div>
+    <div id="slideshow" align=center width=500>
+        <button id='btn_next' onClick="lastSlide()">Prev</button>
+        <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Slideshow</button>
+        <button id='btn_last' onClick="nextSlide()">Next</button>
+        <br>
+    
+    </div>
 </div>
 <script>
 
@@ -189,7 +193,11 @@ const SLIDES = [
         text: "40 hours"
     },
     {
-        year: 2016,
+        year: 2005,
+        text: "40 hours"
+    },
+    {
+        year: 2019,
         text: "70 hours"
     }
 ];
@@ -465,7 +473,7 @@ function setVisualElements() {
                 values.push(parseInt(d[val]));
             })
 
-            values.push(1000*parseInt("MinimumWage"))
+            values.push(1000*parseFloat(d["MinimumWage"]))
 
             //console.log("Max out of", values)
             return d3.max(values); 
