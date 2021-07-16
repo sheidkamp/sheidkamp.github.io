@@ -1,13 +1,14 @@
 <html>
 <script src='https://d3js.org/d3.v5.min.js'></script>
+
 <style> 
  </style>
 <body onload='init()'>
-<div align = center width=500>
+<div align = center>
     <div id="chart" align=center></div>
     <div id="chart2" align=center></div>
 
-    <div id="summary" align=center width=500></div>
+    <div id="summary" align=center width=200></div>
 
     <div id="filters" width=500>
         <table>
@@ -25,7 +26,7 @@
     </div>
     <div id="slideshow" align=center width=500>
         <button id='btn_next' onClick="lastSlide()">Prev</button>
-        <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Slideshow</button>
+        <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Narration</button>
         <button id='btn_last' onClick="nextSlide()">Next</button>
         <br>
     
@@ -37,6 +38,8 @@ const SLIDESHOW = 'slideshow';
 const INTERACTIVE = 'interactive'
 
 let mode = SLIDESHOW;
+let MAIN_FIELD = 'PublicAllCosts';
+const WAGE_FIELD = 'MinimumWage';
 
 function toggleSlideshow() {
     
@@ -45,23 +48,35 @@ function toggleSlideshow() {
     const butn_toggle = document.getElementById("btn_toggle_slideshow");
     const btn_next = document.getElementById("btn_next");
     const btn_last = document.getElementById("btn_last");
+    const filters = document.getElementById("filters");
 
     if (mode == SLIDESHOW) {
         mode = INTERACTIVE;
-        butn_toggle.innerHTML = "Restart Slideshow";
+        butn_toggle.innerHTML = "Restart Narration";
         btn_next.disabled = true;
         btn_last.disabled = true;
         target_year = SLIDES[SLIDES.length-1].year;
         //target_max_y = current_max_y;
-        _setInterval('year_interval',animateYear, 20);
+        _setInterval('year_interval',animateYear, 12);
+        filters.style.display = "unset";
+
     }
     else {
         mode = SLIDESHOW;
-        butn_toggle.innerHTML = "Stop Slideshow";
+        butn_toggle.innerHTML = "Stop Narration";
         slide_index=0;
-        updateSlide(20);
-        btn_next.disabled = false;
-        btn_last.disabled = false;
+        updateSlide(12);
+        btn_next.disabled = true;
+        btn_last.disabled = true;
+        filters.style.display = "none";
+
+        // Reset checkboxes
+        document.getElementById("type_all").checked = false;
+        document.getElementById("type_public").checked = true;
+        document.getElementById("type_private").checked = false;
+        document.getElementById("cost_all").checked = true;
+        document.getElementById("cost_tuition").checked = false;
+        toggleGraph();
     }
 }
 
@@ -130,9 +145,7 @@ const axis_names_2 = {
     minimum_wage: ''
 }
 
-
-function toggleGraph(updateVisuals = true) {
-    school_types = {
+school_types = {
         type_all: 'All',
         type_private: 'Private',
         type_public: 'Public'
@@ -142,6 +155,8 @@ function toggleGraph(updateVisuals = true) {
         cost_all: 'AllCosts',
         cost_tuition: 'TuitionAndFees'
     };
+
+function toggleGraph(updateVisuals = true) {
 
     const btn_values = {};
     Object.keys({...school_types, ...cost_types}).forEach((name) => {
@@ -181,9 +196,7 @@ function toggleGraph(updateVisuals = true) {
 
     if(updateVisuals) {
         setVisualElements();
-        if(mode==SLIDESHOW) {
-            drawChart(SLIDES[slide_index].year)
-        }
+        drawChart(SLIDES[slide_index].year)
     }
 
 
@@ -198,29 +211,79 @@ let slide_index = 0;
 
 const SLIDES = [
     {
-        year: 1968,
-        text: "20 hours a week"
+        year: 1969,
+        text: "In 1969, you could pay for all your public college expenses with 15 hours of minimum wage work per week"
     },
     {
-        year: 1975,
-        text: "More expensive in the 70s"
+        year: 1979,
+        text: "Ten years later, minimum wage had kept pace with costs and you could still pay for public college with 15 hours of minimum wage work per week"
     },
     {
-        year: 1984,
-        text: "Crazy 80s"
+        year: 1983,
+        text: "The number of hours of minimum wage work per week needed to pay for public college hit the 20 hour mark in 1983, and has not dipped below that threshold since"
     },
     {
-        year: 1992,
-        text: "40 hours"
+        year: 1989,
+        text: "By 1989, the minimum wage had not been raised in 8 years while the cost of going to public college almost doubled, and it would now require 29 hours of minimum wage work per week to cover."
     },
     {
-        year: 2005,
-        text: "40 hours"
+        year: 1997,
+        text: "Thanks to a series of minimum wage increases, 8 years later you could still pay for a public college education with 29 hours of minimum wage work per week"
+    },
+    {
+        year: 2006,
+        text: "After a 9 year stretch with no minimum wage increases, 48 hours a week of minimum wage work is now required to pay for public college. This is a full workweek, plus and extra day."
+    },
+    {
+        year: 2009,
+        text: "A series of minimum wage increases pushes the hours per week at minimum wage needed to pay for college down to 40, the length of a standard work week. This number has not fallen since."
     },
     {
         year: 2019,
-        text: "70 hours"
+        text: "After 10 years of a frozen minimum wage, it now requires 56 hours of minimum wage work per week to pay for public college. This many hours would be difficult to manage, even with no school work"
     }
+];
+
+const annotations = [
+    {
+        year: 1984,
+        text: '20 hrs/wk',
+        type: 'hours',
+        height: 50
+    },
+    {
+        year: 1989,
+        text: '8 yrs no increase',
+        type: 'wage'
+    },
+    {
+        year: 1994,
+        text: '30 hrs/wk',
+        type: 'hours',
+        height: 80
+    },  
+    {
+        year: 2004,
+        text: '40 hrs/wk',
+        type: 'hours',
+        height: 80
+    },  
+    {
+        year: 2006,
+        text: '8 yrs no increasee',
+        type: 'wage'
+    },  
+    {
+        year: 2009,
+        text: 'Most recent increase',
+        type: 'wage'
+    },
+    {
+        year: 2013,
+        text: '6 full days/wk',
+        type: 'hours',
+        height: 80
+    },  
 ];
 
 let year_interval;
@@ -296,7 +359,7 @@ const wage_config = {
     ...config_defaults,
     type: "wage",
     name: 'minimum_wage',
-    field: "MinimumWage",
+    field: WAGE_FIELD,
     label: formatDollar,
     color: 'green',
     axis: d3.axisRight,
@@ -324,11 +387,12 @@ var y2;
 let y_axis2;
 let graph2;
 
-var summary = document.querySelector("#summary")
+var summary = document.querySelector("#summary");
+var filters = document.querySelector("#filters");
 var margin = {top: 40, right: 90, bottom: 30, left: 60};
 var width = 820 - margin.left - margin.right;
 var height = 410 - margin.top - margin.bottom;
-var height2 = 180 - margin.top - margin.bottom;
+var height2 = 220 - margin.top - margin.bottom;
 
 let path;
 let svg;
@@ -359,14 +423,17 @@ function clearVisualElements() {
     x_grid_lines = {};
   
     // We need to redraw axis labels, so remove them
-    svg.selectAll(".line-label").remove();
 
+    svg.selectAll(".line-label").remove();
+    d3.selectAll(".annotation").remove();
+    d3.selectAll(".annotation-circle").remove();
 }
 
 
 async function init() {
     college_costs =  await d3.csv( "https://sheidkamp.github.io/data/college/college_costs.csv");
     
+    filters.style.display = "none";
     initializeVisualElements();
     toggleGraph(false);
     setVisualElements();
@@ -374,6 +441,19 @@ async function init() {
     
 }
 
+function mousemove() {
+        if (mode != INTERACTIVE) {
+            return;
+        }
+
+        // recover coordinate we need
+        var x0 = formatTime(
+            x.invert(d3.mouse(this)[0])
+        );
+
+        
+        drawChart(x0);
+    }
 
 function initializeVisualElements(){
     svg = d3.select("#chart")
@@ -399,16 +479,17 @@ function initializeVisualElements(){
 
   
     x2 = d3.scaleBand()
-        .domain(d3.map(college_costs, function(d){return d.Year;}).keys())
+        .domain([...d3.map(college_costs, function(d){return d.Year;}).keys()])
         .range([0, width])
         .padding(0);
 
 
-    svg.append("g")
+    let x_axis = svg.append("g")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x)
             .ticks(d3.timeYear.every(5))
         );
+        
 
     svg2.append("g")
         .attr("transform", "translate(0," + height2 + ")")
@@ -455,32 +536,6 @@ function initializeVisualElements(){
     //
     color_range = d3.scaleLinear().domain([10,60]).range(['green','red']);
 
-    function mouseover() {
-
-        if (mode != INTERACTIVE) {
-            return;
-        }
-        data_sets.forEach((config) => {
-            focus[config.name].style("opacity", 0.5);
-        });
-
-        //x_focus.style("opacity", 0.5);
-    }
-
-    function mousemove() {
-        if (mode != INTERACTIVE) {
-            return;
-        }
-
-        // recover coordinate we need
-        var x0 = formatTime(
-            x.invert(d3.mouse(this)[0])
-        );
-
-        
-        drawChart(x0);
-
-    }
 
     // X Axis labels:
     svg.append("text")             
@@ -538,7 +593,7 @@ function initializeVisualElements(){
                 "translate(" + (width/2) + " ," + 
                             (-20) + ")")
         .style("text-anchor", "middle")
-        .text("Hours per week at minimum wage to pay for college");
+        .text("Hours per week at minimum wage to pay for all public college expenses");
 
     // Graph titles
 
@@ -549,16 +604,6 @@ function initializeVisualElements(){
         .style("pointer-events", "all")
         .attr('width', width)
         .attr('height', height)
-        .on('mouseover', mouseover)
-        .on('mousemove', mousemove);
-
-    svg2
-        .append('rect')
-        .style("fill", "none")
-        .style("pointer-events", "all")
-        .attr('width', width)
-        .attr('height', height2)
-        .on('mouseover', mouseover)
         .on('mousemove', mousemove);
 
 }
@@ -581,7 +626,7 @@ function setVisualElements() {
                 values.push(parseInt(d[val]));
             })
 
-            values.push(1000*parseFloat(d["MinimumWage"]))
+            values.push(1000*parseFloat(d[WAGE_FIELD]))
 
             //console.log("Max out of", values)
             return d3.max(values); 
@@ -645,7 +690,6 @@ function setVisualElements() {
                 .y(function(d) { last_y = ys(d[config.field]); return last_y; })
                 );
 
-        console.log(last_x, last_y);
         last_x = d3.max([last_x,30]);
         svg.append("text")
             .attr("class", "line-label")
@@ -685,28 +729,6 @@ function setVisualElements() {
         )
         .attr("style","color:"+ COST_AXIS_COLOR+ ";");
 
-    let MAIN_FIELD = 'PublicAllCosts';
-
-    graph2 = svg2.append("g")
-        .selectAll("rect")
-        .data(filtered_data)
-        .join("rect")
-        .attr("x", (d, i) => {return x2(d.Year)})
-        .attr("y", (d,i) => { return y2( (1.0*d[MAIN_FIELD]) / (52.0*d["MinimumWage"]))})
-        .attr("height", (d,i) => { return height2-y2( (1.0*d[MAIN_FIELD]) / (52.0*d["MinimumWage"])) })
-        .attr("width", (d) => {return x2.bandwidth();} )
-        .attr("fill", (d) => {
-            if (mode == SLIDESHOW) {
-                if ( d.Year == filtered_data[filtered_data.length - 1].Year) {
-                    return "orange";
-                }
-            }
-            else {
-                // find and highlight the "selected one"
-            }
-
-            return color_range((1.0*d[MAIN_FIELD]) / (52.0*d["MinimumWage"]));
-        })
 
     svg.selectAll(".tick")
         .each(function (d) {
@@ -731,7 +753,7 @@ function drawChartYear(year) {
 function generateSummary(selectedData) {
     const table_data = [];
 
-    const table_start = "<table border=1>";
+    const table_start = "<table border=1><tr><th colspan=0></th>" + selectedData.Year + "</tr>";
     const table_end = "</table>";
     let table_rows = '';
 
@@ -739,7 +761,7 @@ function generateSummary(selectedData) {
     const rows = [
         {name: 'Cost', value: (d, c) => {return formatDollarWhole(d[c.field]) }},
         {name: 'Minimum Wage', value: (d, c) => {return formatDollar(d[wage_config.field]) + "/hr" }},
-        {name: 'Hours Per Week', value: (d, c) => {return Math.round(d[c.field] / d[wage_config.field]/52.0) }},
+        {name: 'Hours Per Week', value: (d, c) => {return (d[c.field] / d[wage_config.field]/52.0).toFixed(1) }},
     ];
 
     rows.forEach((row) => {
@@ -759,6 +781,7 @@ function generateSummary(selectedData) {
         slide_text = SLIDES[slide_index].text + '<br>'
     }
     
+    console.log("setting summary html")
     summary.innerHTML = slide_text + table_start + table_rows + table_end;
 }
 
@@ -790,14 +813,140 @@ function drawChart(x0) {
         .attr("cy", height)
         .attr("stroke", 'black');
 
+
     line.attr("x1", x(parseDate(selectedData.Year)))
         .attr("y1", 0)
         .attr("x2", x(parseDate(selectedData.Year)))
         .attr("y2", height);
 
-    // Little graph
 
+
+    const filtered_data = filterData();
+
+    svg2.selectAll("rect").remove();
+
+    graph2 = svg2.append("g")
+        .selectAll("rect")
+        .data(filtered_data)
+        .join("rect")
+        .attr("x", (d, i) => {return x2(d.Year)})
+        .attr("y", (d,i) => { return y2( (1.0*d[MAIN_FIELD]) / (52.0*d[WAGE_FIELD]))})
+        .attr("height", (d,i) => { return height2-y2( (1.0*d[MAIN_FIELD]) / (52.0*d[WAGE_FIELD])) })
+        .attr("width", (d) => {return x2.bandwidth();} )
+        .attr("fill", (d) => {
+            if (mode == SLIDESHOW) {
+                if ( d.Year == filtered_data[filtered_data.length - 1].Year) {
+                    return "orange";
+                }
+            }
+            else { // mode == INTERACTIVE
+                if ( d.Year == selectedData.Year) {
+                    return "orange";
+                }
+            }
+
+            return color_range((1.0*d[MAIN_FIELD]) / (52.0*d[WAGE_FIELD]));
+        })
+
+
+        svg2
+        .append('rect')
+        .style("fill", "none")
+        .style("pointer-events", "all")
+        .attr('width', width)
+        .attr('height', height2)
+        .on('mousemove', mousemove);
+
+    display_annotations();
     console.log("ok")
+
+}
+
+
+function display_annotations() {
+    if (mode != SLIDESHOW) {
+        return;
+    }
+
+    const notes = {
+        wage: [],
+        hours: []
+    }
+
+    annotations.forEach((note) => {
+        if( note.year <= current_year ) {
+            console.log("Annotate", note.text);
+
+            notes[note.type].push(note);
+        }
+    });
+
+    
+    // Chart 1
+    svg.append("g")
+        .selectAll(".annotation")
+        .data(notes.wage)
+        .join("text")
+        .attr("class", "annotation")
+        .attr("y", (d) => {
+            const i = bisect(college_costs, d.year, 1);
+            return y.wage(college_costs[i][WAGE_FIELD]) + 15;
+        })
+        .attr("x", (d, i) => {return x(parseDate(d.year))})
+        .style("fill", "#030") //wage_config.color)
+        .style("bgcolor", "blue")
+        .style("text-anchor", "center")
+        .text(d => d.text)
+        .style("font-size","12px") ;
+
+    svg.append("g")
+        .selectAll(".annotation-circle")
+        .data(notes.wage)
+        .join("circle")
+        .attr("class", "annotation-circle")
+        .attr("cy", (d) => {
+            const i = bisect(college_costs, d.year, 1);
+            return y.wage(college_costs[i][WAGE_FIELD]);
+        })
+        .attr("cx", (d, i) => {return x(parseDate(d.year))})
+        .attr("r", 4)
+        .style("fill", "#030") //wage_config.color)
+        .style("opacity","0.5")
+
+
+        //return color_range((1.0*d[MAIN_FIELD]) / (52.0*d[WAGE_FIELD]));
+    // Chart 2
+    svg2.append("g")
+        .selectAll(".annotation")
+        .data(notes.hours)
+        .join("text")
+        .attr("class", "annotation")
+        .attr("y", (d) => {return 20})
+        .attr("x", (d, i) => {return x2(d.year) + x2.bandwidth()/2 - 30})
+        .style("fill", (d) => {
+            const i = bisect(college_costs, d.year, 1);
+            return  color_range((1.0*college_costs[i][MAIN_FIELD]) / (52.0*college_costs[i][WAGE_FIELD]));
+        })
+        .style("text-anchor", "center")
+        .text(d => d.text)
+        //.style("font-size","14px") ;
+
+    svg2.append("g")
+        .selectAll(".annotation-circle")
+        .data(notes.hours)
+        .join("line")
+        .attr("class", "annotation-circle")
+        .attr("y1", (d) => {return 23})
+        .attr("x1", (d, i) => {return x2(d.year) + x2.bandwidth()/2})
+        .attr("y2", (d) => {
+            const i = bisect(college_costs, d.year, 1);
+            return  height2+y2(1.0*college_costs[i][MAIN_FIELD]) / (52.0*college_costs[i][WAGE_FIELD]);
+        })
+        .attr("x2", (d, i) => {return x2(d.year) + x2.bandwidth()/2})
+        .style("stroke", (d) => {
+            const i = bisect(college_costs, d.year, 1);
+            return  color_range((1.0*college_costs[i][MAIN_FIELD]) / (52.0*college_costs[i][WAGE_FIELD]));
+        });
 
 }
 
