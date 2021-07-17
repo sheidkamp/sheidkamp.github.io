@@ -20,29 +20,42 @@ table {
     <div id="chart" align=center></div>
     <div id="chart2" align=center></div>
 </td>
-<td width=470>
-    <div id="slideshow" align=center>
-        <div id='slideshow-text' class='top'></div>
-        <button id='btn_next' onClick="lastSlide()">Prev</button>
-        <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Narration</button>
-        <button id='btn_last' onClick="nextSlide()">Next</button>
-    </div>
-    
-
-    <div id="filters" width=500>
+<td width=470 valign=top>
         <table>
-            <tr valign="top"><td>
-                School type<br>
-                <input type="checkbox" id="type_all"  onclick="toggleGraph()">All<br>
-                <input type="checkbox" id="type_public" checked onclick="toggleGraph()">Public<br>
-                <input type="checkbox" id="type_private" onclick="toggleGraph()">Private<br>
-            </td><td>
-                Cost of<br>
-                <input type="checkbox" id="cost_all" checked onclick="toggleGraph()">All Costs<br>
-                <input type="checkbox" id="cost_tuition" onclick="toggleGraph()">Tution and Fees Only<br>
-            </td></tr>
-        </table>
-    </div>
+
+        <tr height=300 ><td>
+            <div id='slideshow-text' class='top' ></div>
+        </td></tr>
+
+        <tr><td align="center">
+            <button id='btn_next' onClick="lastSlide()">Prev</button>
+            <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Narration</button>
+            <button id='btn_last' onClick="nextSlide()">Next</button>
+        </td></tr>
+
+        <tr><td> <div id="summary" align=center width=200></div> </td></tr>
+
+        <tr><td align="center">
+            <div id="filters" >
+                <table>
+                    <tr valign="top"><td>
+                        School type<br>
+                        <input type="checkbox" id="type_all"  onclick="toggleGraph()">All<br>
+                        <input type="checkbox" id="type_public" checked onclick="toggleGraph()">Public<br>
+                        <input type="checkbox" id="type_private" onclick="toggleGraph()">Private<br>
+                    </td><td>
+                        Cost of<br>
+                        <input type="checkbox" id="cost_all" checked onclick="toggleGraph()">All Costs<br>
+                        <input type="checkbox" id="cost_tuition" onclick="toggleGraph()">Tution and Fees Only<br>
+                    </td></tr>
+                </table>
+            </div>
+        </td></tr>
+
+        
+    </table>
+
+
     <div id="summary" align=center width=200></div>
 </td>
 </tr></table>
@@ -231,35 +244,50 @@ let slide_index = 0;
 const SLIDES = [
     {
         year: 1969,
-        text: "In 1969, you could pay for all your public college expenses with 15 hours of minimum wage work per week"
+        text: "The idea of working your way through college is part of the mythos of the American dream. How realistic was working your way through college, and is it still possible?"
+               + "<p>We will look at how the minimum wage has changed with respect to the cost of a public college education, specifically at how many hours of work it would take to pay for the costs."
+               + "<p>We are looking at public college costs, as public college is more affordable for a working student, and a student is likely to have a job at or near minumum wage"
+    },
+    {
+        year: 1969,
+        text: "In 1969 you could pay for all of your college expenses working just under 15 hours a week at minimum wage. This workload is manageable for a full-time student"
     },
     {
         year: 1979,
-        text: "Ten years later, minimum wage had kept pace with costs and you could still pay for public college with 15 hours of minimum wage work per week"
+        text: "Ten years later, minimum wage had kept pace with costs and you could still pay for public college a little over 15 hours of minimum wage work per week"
     },
     {
-        year: 1983,
-        text: "The number of hours of minimum wage work per week needed to pay for public college hit the 20 hour mark in 1983, and has not dipped below that threshold since"
+        year: 1984,
+        text: "Five years later the cost of public college had increased around by around 50% and minimum wage had increased by around only 15%."
+            + " As a result the number of hours needed to pay for college increased to over 20 hours for the first time. It has not gone below that number since."
+            + "<p>This amount of work is probably manageable for a full-time student, but is more challenging than it used to be"
     },
     {
         year: 1989,
-        text: "By 1989, the minimum wage had not been raised in 8 years while the cost of going to public college almost doubled, and it would now require 29 hours of minimum wage work per week to cover."
+        text: "In 1989, the minimum wage had not been raised in 8 years while the cost of going to public college continued to increase."
+          + "It would now require almost 29 hours of minimum wage work per week to cover, almost double the number of hours from a decade before."
+          + "<p>The number of hours required to pay for college is now pushing close to 4 days of full time work a week. It is getting hard to imagine balancing that with a full course load"
     },
     {
         year: 1997,
-        text: "Thanks to a series of minimum wage increases, 8 years later you could still pay for a public college education with 29 hours of minimum wage work per week"
+        text: "Thanks to a series of minimum wage increases, 8 years later you could still pay for a public college education with a less than 29 hours of minimum wage work per week."
+         + "Working your way through college hadn't gotten easier, but it hadn't gotten worse"
     },
     {
         year: 2006,
-        text: "After a 9 year stretch with no minimum wage increases, 48 hours a week of minimum wage work is now required to pay for public college. This is a full workweek, plus and extra day."
+        text: "After a 9 year stretch with no minimum wage increases, 48 hours a week of minimum wage work is now required to pay for public college.'
+        + '<p>This is a full workweek, plus and extra day, and it would be challenging to be even a part time student while working so much"
     },
     {
         year: 2009,
-        text: "A series of minimum wage increases pushes the hours per week at minimum wage needed to pay for college down to 40, the length of a standard work week. This number has not fallen since."
+        text: "A series of minimum wage increases pushes the hours per week at minimum wage needed to pay for college down to 40, the length of a standard work week. "
+        + "<p>Thhis was the last time the minimum wage was raiased, and this number has not fallen since."
     },
     {
         year: 2019,
-        text: "After 10 years of a frozen minimum wage, it now requires 56 hours of minimum wage work per week to pay for public college. This many hours would be difficult to manage, even with no school work"
+        text: "After 10 years of a frozen minimum wage, it now requires 56 hours of minimum wage work per week to pay for public college."
+        + "This is 2 hours short of a full work day every day of the week."
+        + "<p>While it was once possible to pay your way through school while working a minimum wage job, it is no longer a realistic option"
     }
 ];
 
@@ -772,7 +800,7 @@ function drawChartYear(year) {
 function generateSummary(selectedData) {
     const table_data = [];
 
-    const table_start = "<table class='summary'  width=100%><tr><th colspan=7>" + selectedData.Year + "</th></tr>";
+    const table_start = "<table class='summary'  width=100%><tr><th colspan=7>Year: " + selectedData.Year + "</th></tr>";
     const table_end = "</table>";
     let table_rows = '';
 
