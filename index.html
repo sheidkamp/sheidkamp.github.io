@@ -15,22 +15,24 @@ table {
  </style>
 <body onload='init()'>
 
-<table border =1><tr>
+<table border =1>
+<tr><td colspan=2><h1 align=center>Working Your Way Through College, Then and Now</h1></td></tr>    
+<tr>
 <td>
     <div id="chart" align=center></div>
     <div id="chart2" align=center></div>
 </td>
 <td width=470 valign=top>
-        <table>
+        <table width=100%>
 
-        <tr height=300 ><td>
-            <div id='slideshow-text' class='top' ></div>
+        <tr height=300 ><td id='slideshow-text' padding=8px>
+            <!-- <div id='slideshow-text' class='top' ></div> -->
         </td></tr>
 
         <tr><td align="center">
-            <button id='btn_next' onClick="lastSlide()">Prev</button>
+            <button id='btn_last' onClick="lastSlide()"> &lt; Prev</button>
             <button id="btn_toggle_slideshow" onClick='toggleSlideshow()'>Stop Narration</button>
-            <button id='btn_last' onClick="nextSlide()">Next</button>
+            <button id='btn_next' onClick="nextSlide()">Next &gt;</button>
         </td></tr>
 
         <tr><td> <div id="summary" align=center width=200></div> </td></tr>
@@ -59,6 +61,15 @@ table {
     <div id="summary" align=center width=200></div>
 </td>
 </tr></table>
+<div>
+
+<ul>
+    <li>College Cost data from the <a href ="https://nces.ed.gov/">National Center For Education Statistics</a>: 
+        <a href="https://nces.ed.gov/programs/digest/d20/tables/xls/tabn330.10.xls">https://nces.ed.gov/programs/digest/d20/tables/xls/tabn330.10.xls</a></li>
+    <li>Minimum Wage data from  <a href ="https://www.dol.gov/">Department of Labor</a>: 
+        <a href="https://www.dol.gov/agencies/whd/minimum-wage/history/chart">https://www.dol.gov/agencies/whd/minimum-wage/history/chart</a></li>
+</ul>
+</div>
 
 
 
@@ -89,6 +100,7 @@ function toggleSlideshow() {
         //target_max_y = current_max_y;
         _setInterval('year_interval',animateYear, 12);
         filters.style.display = "unset";
+        slideshow_text.innerHTML = '';
 
     }
     else {
@@ -132,18 +144,19 @@ function _clearInterval(name) {
         if (mode == SLIDESHOW) {
             document.getElementById("btn_next").disabled = false;
             document.getElementById("btn_last").disabled = false;
+            setButtons()
         }
     }
 }
 
 
 const graph_colors = {
-    AllAllCosts: 'Yellow',
+    AllAllCosts: '#8D38C9',
     PrivateAllCosts: 'DarkOrange',
     PublicAllCosts: 'RoyalBlue',
-    AllTuitionAndFees: 'Khaki',
+    AllTuitionAndFees: '#8467D7',
     PrivateTuitionAndFees: 'LightSalmon',
-    PublicTuitionAndFees: 'LightBlue'
+    PublicTuitionAndFees: 'DodgerBlue'
 };
 
 const display_names = {
@@ -247,6 +260,7 @@ const SLIDES = [
         text: "The idea of working your way through college is part of the mythos of the American dream. How realistic was working your way through college, and is it still possible?"
                + "<p>We will look at how the minimum wage has changed with respect to the cost of a public college education, specifically at how many hours of work it would take to pay for the costs."
                + "<p>We are looking at public college costs, as public college is more affordable for a working student, and a student is likely to have a job at or near minumum wage"
+               + "<p>Use the buttons below to view how the affordability of college for a minimum wage worker has changed over time"
     },
     {
         year: 1969,
@@ -287,9 +301,15 @@ const SLIDES = [
         year: 2019,
         text: "After 10 years of a frozen minimum wage, it now requires 56 hours of minimum wage work per week to pay for public college."
         + "This is 2 hours short of a full work day every day of the week."
-        + "<p>While it was once possible to pay your way through school while working a minimum wage job, it is no longer a realistic option    "
-    }
+        + "<p>While it was once possible to pay your way through school while working a minimum wage job, it is no longer a realistic option"
+        + "<p>If you wish to explore the data further, please click the 'Stop Narration' button. You will be able to select other data sets to view, and use the mouse to see their values for different years"
+    },
+    
 ];
+
+const INTERACTIVE_MODE_TEXT = "To view the guided narrative again, please click 'Restart Narration'"
+    + "<p>Use the check boxes to add and remove data sets"
+    + "<p>Move the mouse over the graphs and the chart will give you the exact values"
 
 const annotations = [
     {
@@ -354,6 +374,7 @@ function lastSlide() {
     if (slide_index > 0) {
         slide_index--;
     }
+
     updateSlide();
 }
 
@@ -362,6 +383,27 @@ function updateSlide(speed=50) {
 
     target_year = slide.year;
     _setInterval("year_interval", animateYear, speed);
+
+    setButtons();
+}
+
+function setButtons() {
+    const btn_next = document.getElementById("btn_next");
+    const btn_last = document.getElementById("btn_last");
+
+    if(slide_index == 0) {
+        btn_last.disabled = true;
+    }
+    else {
+        btn_last.disabled = false;
+    }
+
+    if(slide_index == SLIDES.length - 1) {
+        btn_next.disabled = true;
+    }
+    else {
+        btn_next.disabled = false;
+    }
 }
 
 
@@ -445,6 +487,8 @@ let path;
 let svg;
 let svg2;
 
+const GRAPH_BG_COLOR = "#FFFFF0";
+
 let college_costs;
 let display_college_costs;
 
@@ -519,6 +563,12 @@ function initializeVisualElements(){
             .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
 
+    svg.append("rect")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("fill", GRAPH_BG_COLOR);
+        
+
     // Add X axis
     x = d3.scaleTime()
         .domain(d3.extent(college_costs, function(d) { return parseDate(d.Year); }))
@@ -526,7 +576,7 @@ function initializeVisualElements(){
 
   
     x2 = d3.scaleBand()
-        .domain([...d3.map(college_costs, function(d){return d.Year;}).keys()])
+        .domain(d3.map(college_costs, function(d){return d.Year;}).keys())
         .range([0, width])
         .padding(0);
 
@@ -838,6 +888,10 @@ function generateSummary(selectedData) {
         //slide_text = SLIDES[slide_index].text + '<br>'
         slideshow_text.innerHTML = SLIDES[slide_index].text;
     }
+    else {
+        //slide_text = SLIDES[slide_index].text + '<br>'
+        slideshow_text.innerHTML = INTERACTIVE_MODE_TEXT;
+    }
     
     console.log("setting summary html")
     summary.innerHTML = slide_text + table_start + table_rows + table_end;
@@ -882,6 +936,7 @@ function drawChart(x0) {
     const filtered_data = filterData();
 
     svg2.selectAll("rect").remove();
+
 
     graph2 = svg2.append("g")
         .selectAll("rect")
