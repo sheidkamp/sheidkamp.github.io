@@ -272,35 +272,35 @@ const SLIDES = [
     },
     {
         year: 1984,
-        text: "Five years later the cost of public college had increased around by around 50% and minimum wage had increased by around only 15%."
+        text: "Five years later the cost of public college had increased by over 50% and minimum wage had increased by just over 15%."
             + " As a result the number of hours needed to pay for college increased to over 20 hours for the first time. It has not gone below that number since."
-            + "<p>This amount of work is probably manageable for a full-time student, but is more challenging than it used to be"
+            + "<p>This amount of work is probably manageable for a full-time student, but is more challenging than it was only a few years prior"
     },
     {
         year: 1989,
         text: "In 1989, the minimum wage had not been raised in 8 years while the cost of going to public college continued to increase."
-          + "It would now require almost 29 hours of minimum wage work per week to cover, almost double the number of hours from a decade before."
-          + "<p>The number of hours required to pay for college is now pushing close to 4 days of full time work a week. It is getting hard to imagine balancing that with a full course load"
+          + " It would now require almost 29 hours of minimum wage work per week to cover, nearly double the number of hours from a decade before."
+          + "<p>The number of hours required to pay for college is now pushing close to 4 days of full time work a week. It is getting hard to imagine balancing that workload with a full course load"
     },
     {
         year: 1997,
-        text: "Thanks to a series of minimum wage increases, 8 years later you could still pay for a public college education with a less than 29 hours of minimum wage work per week."
+        text: "Thanks to a series of minimum wage increases, 8 years later you could still pay for a public college education with less than 29 hours of minimum wage work per week."
          + "Working your way through college hadn't gotten easier, but it hadn't gotten worse"
     },
     {
         year: 2006,
         text: "After a 9 year stretch with no minimum wage increases, 48 hours a week of minimum wage work is now required to pay for public college."
-        + '<p>This is a full workweek, plus and extra day, and it would be challenging to be even a part time student while working so much'
+        + '<p>This is a full workweek, plus an extra day, and it would be challenging to be even a part time student while working so much'
     },
     {
         year: 2009,
         text: "A series of minimum wage increases pushes the hours per week at minimum wage needed to pay for college down to 40, the length of a standard work week. "
-        + "<p>Thhis was the last time the minimum wage was raiased, and this number has not fallen since."
+        + "<p>This was the last time the minimum wage was raised, and the number of hours of work needed has not fallen since."
     },
     {
         year: 2019,
         text: "After 10 years of a frozen minimum wage, it now requires 56 hours of minimum wage work per week to pay for public college."
-        + "This is 2 hours short of a full work day every day of the week."
+        + "That is 2 hours short of a full work day every day of the week."
         + "<p>While it was once possible to pay your way through school while working a minimum wage job, it is no longer a realistic option"
         + "<p>If you wish to explore the data further, please click the 'Stop Narration' button. You will be able to select other data sets to view, and use the mouse to see their values for different years"
     },
@@ -886,7 +886,13 @@ function generateSummary(selectedData) {
 
     if (mode == SLIDESHOW) {
         //slide_text = SLIDES[slide_index].text + '<br>'
-        slideshow_text.innerHTML = SLIDES[slide_index].text;
+        let year_text = '';
+        if (slide_index != 0) {
+            year_text = "<div align=center><b>" + SLIDES[slide_index].year + "</b></div><p>";
+        }
+
+
+        slideshow_text.innerHTML = year_text + SLIDES[slide_index].text;
     }
     else {
         //slide_text = SLIDES[slide_index].text + '<br>'
